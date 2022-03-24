@@ -7,9 +7,9 @@ edition = "2018"
 [dependencies]
 linux-abi ={ path = "../linux-abi"}
 
+# enable no-std in phf
 [dependencies.phf]
-git = "https://github.com/Kazurin-775/rust-phf.git"
-rev = "171f1f59"
+version = "0.10.0"
 default-features = false
 features = ["macros"]
 

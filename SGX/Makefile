@@ -1,8 +1,26 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
 ######## SGX SDK Settings ########
 
-SGX_SDK ?= ~/Downloads/SGX/sgxsdk/#/opt/sgxsdk
-SGX_MODE ?= SIM
+export SGX_SDK ?= /opt/intel/sgxsdk
+export SGX_MODE ?= SIM
 SGX_ARCH ?= x64
+RUST_TOOLCHAIN ?= nightly
 
 TOP_DIR := ./lib
 include $(TOP_DIR)/buildenv.mk
@@ -117,7 +135,7 @@ $(App_Enclave_u_Object): app/Enclave_u.o
 	$(AR) rcsD $@ $^
 
 $(App_Name): $(App_Enclave_u_Object) $(App_SRC_Files)
-	@cd app && SGX_SDK=$(SGX_SDK) cargo build $(App_Rust_Flags)
+	@cd app && cargo +$(RUST_TOOLCHAIN) build $(App_Rust_Flags)
 	@echo "Cargo  =>  $@"
 	mkdir -p bin
 	cp $(App_Rust_Path)/app ./bin
@@ -139,7 +157,7 @@ $(Signed_RustEnclave_Name): $(RustEnclave_Name)
 
 .PHONY: enclave
 enclave:
-	$(MAKE) -C ./enclave/
+	$(MAKE) -C ./enclave/ RUST_TOOLCHAIN=$(RUST_TOOLCHAIN)
 
 
 .PHONY: clean

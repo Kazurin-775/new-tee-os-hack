@@ -10,8 +10,7 @@ sgx-hal={path="../sgx-hal"}
 
 # enable no-std in phf
 [dependencies.phf]
-git = "https://github.com/Kazurin-775/rust-phf.git"
-rev = "171f1f59"
+version = "0.10.0"
 default-features = false
 features = ["macros"]
 

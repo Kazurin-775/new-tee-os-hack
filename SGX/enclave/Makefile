@@ -17,6 +17,6 @@ ifeq ($(XARGO_SGX), 1)
 	RUST_TARGET_PATH=$(Rust_Target_Path) xargo build --target x86_64-unknown-linux-sgx --release
 	cp ./target/x86_64-unknown-linux-sgx/release/libsgxteeos.a ../lib/libenclave.a
 else
-	cargo build --release
+	cargo +$(RUST_TOOLCHAIN) build --release
 	cp ./target/release/libsgxteeos.a ../lib/libenclave.a
 endif

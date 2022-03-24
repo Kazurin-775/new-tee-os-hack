@@ -1,0 +1,4 @@
+/libEnclave_u.a
+/libenclave.a
+/libtest.a
+*.o
