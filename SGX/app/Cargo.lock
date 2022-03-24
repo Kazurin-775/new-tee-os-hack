@@ -81,7 +81,8 @@ source = "git+https://github.com/apache/teaclave-sgx-sdk.git#e8a9fc22939befa27ff
 
 [[package]]
 name = "sgx_urts"
-version = "1.1.3"
+version = "1.1.4"
+source = "git+https://github.com/apache/teaclave-sgx-sdk.git#e8a9fc22939befa27ff67f5509b2c2dfe8499945"
 dependencies = [
  "libc",
  "sgx_types",
