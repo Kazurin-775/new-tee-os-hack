@@ -71,7 +71,6 @@ Enclave_EDL_Files := enclave/Enclave_t.c enclave/Enclave_t.h app/Enclave_u.c app
 ######## APP Settings ########
 
 App_Rust_Flags := --release
-App_SRC_Files := $(shell find app/ -type f -name '*.rs') $(shell find app/ -type f -name 'Cargo.toml')
 App_Include_Paths := -I ./app -I./include -I$(SGX_SDK)/include -I$(CUSTOM_EDL_PATH)
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
@@ -134,11 +133,13 @@ app/Enclave_u.o: $(Enclave_EDL_Files) lib/libtest.a
 $(App_Enclave_u_Object): app/Enclave_u.o
 	$(AR) rcsD $@ $^
 
-$(App_Name): $(App_Enclave_u_Object) $(App_SRC_Files)
+$(App_Name): $(App_Enclave_u_Object) FORCE
 	@cd app && cargo +$(RUST_TOOLCHAIN) build $(App_Rust_Flags)
 	@echo "Cargo  =>  $@"
 	mkdir -p bin
 	cp $(App_Rust_Path)/app ./bin
+
+FORCE:
 
 ######## Enclave Objects ########
 
