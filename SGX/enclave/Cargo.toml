@@ -1,6 +1,7 @@
 [package]
 name = "sgxteeos"
 version = "1.0.0"
+edition = "2021"
 authors = ["zjuliangxun <m13009809900@163.com>"]
 
 [lib]
@@ -18,12 +19,11 @@ panic = "abort"
 lto = true
 
 [dependencies]
-linux-abi = {path = "../linux-abi"}
-sgx-cfg = {path = "../sgx-cfg"}
-sgx-rt = {path = "../sgx-rt"}
-sgx-hal = {path = "../sgx-hal"}
-elfloader = { path = "../elfloader"}
-
+elfloader = { path = "../elfloader" }
+linux-abi = { path = "../linux-abi" }
+sgx-cfg = { path = "../sgx-cfg" }
+sgx-hal = { path = "../sgx-hal" }
+sgx-rt = { path = "../sgx-rt" }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
 sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
