@@ -1,0 +1,15 @@
+[package]
+name = "sgx-runner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.56"
+env_logger = "0.9.0"
+log = "0.4.16"
+libc = "0.2.121"
+nix = "0.23.1"
+
+[target.'cfg(not(target_env = "sgx"))'.dependencies]
+sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_urts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
