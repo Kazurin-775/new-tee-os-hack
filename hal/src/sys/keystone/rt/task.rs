@@ -64,9 +64,9 @@ pub fn ensure_ktask_context() {
     // check if tp is non-zero
     let tp: usize;
     unsafe {
-        asm!("mv {}, tp", out(reg) tp);
+        core::arch::asm!("mv {}, tp", out(reg) tp);
     }
     assert_ne!(tp, 0);
 }
 
-global_asm!(include_str!("./task.S"));
+core::arch::global_asm!(include_str!("./task.S"));

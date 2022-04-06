@@ -8,10 +8,10 @@ keystone = ["hal/keystone-rt"]
 
 [dependencies]
 hal = { path = "../hal" }
-log = "0.4.14"
+log = "0.4.16"
 
 # enable no-std in phf
 [dependencies.phf]
-version = "0.10.0"
+version = "0.10.1"
 default-features = false
 features = ["macros"]

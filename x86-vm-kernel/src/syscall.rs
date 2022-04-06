@@ -3,7 +3,7 @@ use linux_abi::syscall::tables::TABLE_X86_64 as SYSCALL_TABLE;
 use linux_abi::syscall::SyscallHandler;
 use x86_64::VirtAddr;
 
-global_asm!(include_str!("asm/syscall.asm"));
+core::arch::global_asm!(include_str!("asm/syscall.asm"));
 
 extern "C" {
     fn syscall_entry();

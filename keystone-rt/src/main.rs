@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(asm, global_asm, panic_info_message)]
+#![feature(panic_info_message)]
 
 extern crate alloc;
 

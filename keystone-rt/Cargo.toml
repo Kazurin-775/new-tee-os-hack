@@ -9,6 +9,7 @@ executor = { git = "https://github.com/rcore-os/executor.git", rev = "04b6b7b" }
 hal = { path = "../hal", features = ["keystone-rt"] }
 kmalloc = { path = "../kmalloc" }
 linux-abi = { path = "../linux-abi", features = ["keystone"] }
-log = "0.4.14"
-riscv = { version = "0.7.0", features = ["inline-asm"] }
+log = "0.4.16"
+# Waiting for llvm_asm fixes to be released
+riscv = { git = "https://github.com/rust-embedded/riscv.git", rev = "cd31989", features = ["inline-asm"] }
 spin = "0.9.2"

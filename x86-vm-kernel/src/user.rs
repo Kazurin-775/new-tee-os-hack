@@ -90,7 +90,7 @@ pub fn enter_user_mode() {
 unsafe extern "C" fn user_entry() -> ! {
     gdt::enter_user();
 
-    asm!(
+    core::arch::asm!(
         // save kernel sp
         "mov    gs:[0], rsp",
         "swapgs",

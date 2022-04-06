@@ -8,7 +8,7 @@ pub const STOP_EDGE_CALL_HOST: usize = 1;
 #[inline]
 unsafe fn sbicall(ext: usize, which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
     let result;
-    asm!(
+    core::arch::asm!(
         "ecall",
 
         in("a7") ext,
