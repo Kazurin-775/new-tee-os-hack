@@ -62,7 +62,7 @@ extern "C" {
     fn user_entry() -> !;
 }
 
-global_asm!(include_str!("task.asm"));
+core::arch::global_asm!(include_str!("task.asm"));
 
 pub fn ensure_ktask_context() {
     // IA32_KERNEL_GS_BASE must be 0 in a kernel context

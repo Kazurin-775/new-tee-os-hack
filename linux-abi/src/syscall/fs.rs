@@ -16,7 +16,7 @@ unsafe fn edge_write(fd: usize, buf: &[u8]) -> isize {
                 len: buf.len() as u64,
             })
             .write_buffer(buf);
-        unsafe { caller.edge_call() };
+        caller.edge_call();
 
         caller.edge_mem().read_syscall_result()
     })

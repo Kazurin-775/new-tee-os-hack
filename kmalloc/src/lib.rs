@@ -1,5 +1,5 @@
 #![no_std]
-#![feature(alloc_error_handler, const_fn_trait_bound)]
+#![feature(alloc_error_handler)]
 
 extern crate alloc;
 
@@ -26,6 +26,7 @@ pub unsafe trait KmallocUnlocked {
 }
 
 #[alloc_error_handler]
+#[cfg(not(test))]
 fn alloc_error_handler(_layout: alloc::alloc::Layout) -> ! {
     panic!("out of memory")
 }
