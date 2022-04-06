@@ -118,18 +118,14 @@ $(Enclave_EDL_Files): $(SGX_EDGER8R) enclave/Enclave.edl
 
 
 
-lib/libtest.a:
-	@cd lib/syscalls && make
-	@echo "ar => $@"
-
 ######## App Objects ########
 
-app/Enclave_u.o: $(Enclave_EDL_Files) lib/libtest.a
+app/Enclave_u.o: $(Enclave_EDL_Files)
 	@$(CC) $(App_C_Flags) -c app/Enclave_u.c -o $@
 	@echo "CC   <=  $<"
 	@echo $(SGX_SDK)
 	@echo $(SGX_MODE)
-	
+
 $(App_Enclave_u_Object): app/Enclave_u.o
 	$(AR) rcsD $@ $^
 
