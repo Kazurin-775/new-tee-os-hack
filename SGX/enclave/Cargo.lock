@@ -15,10 +15,8 @@ dependencies = [
  "goblin",
  "libc",
  "linked_list_allocator",
- "lock_api",
  "sgx-rt",
  "sgx_alloc",
- "spinning_top",
 ]
 
 [[package]]
