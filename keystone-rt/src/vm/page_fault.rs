@@ -1,8 +1,8 @@
 use alloc::alloc::{alloc, Layout};
 
-use hal::arch::keystone::vm::*;
 use hal::cfg::*;
 use log::debug;
+use riscv_sv39::*;
 
 // SAFETY: already checked
 static ALLOC_LAYOUT_PAGE: Layout =

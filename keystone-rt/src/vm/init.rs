@@ -1,6 +1,6 @@
-use hal::arch::keystone::vm::*;
 use hal::cfg::*;
 use riscv::register::satp;
+use riscv_sv39::*;
 
 struct LinearMemoryManager {
     phys2virt_offset: usize,

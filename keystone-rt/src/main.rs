@@ -5,12 +5,10 @@
 extern crate alloc;
 
 use alloc::sync::Arc;
-use hal::{
-    arch::keystone::vm::{PageTableEntry, VirtAddr},
-    edge::EdgeFile,
-};
+use hal::edge::EdgeFile;
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
 use log::debug;
+use riscv_sv39::{PageTableEntry, VirtAddr};
 use spin::Mutex;
 
 mod elf;

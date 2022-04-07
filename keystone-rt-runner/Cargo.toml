@@ -7,3 +7,4 @@ edition = "2018"
 edge-responder = { path = "../edge-responder" }
 hal = { path = "../hal", features = ["keystone"] }
 nix = "0.23.1"
+riscv-sv39 = { path = "../riscv-sv39" }

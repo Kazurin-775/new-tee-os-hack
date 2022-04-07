@@ -1,3 +1,5 @@
+#![no_std]
+
 mod addr;
 mod pagetable;
 #[cfg(test)]

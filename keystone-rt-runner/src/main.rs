@@ -2,12 +2,9 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 mod keystone;
 
-use hal::{
-    arch::keystone::vm::{PageManager, PageTableEntry, PhysAddr, RootPageTable, VirtAddr},
-    cfg::*,
-    edge::EdgeMemory,
-};
+use hal::{cfg::*, edge::EdgeMemory};
 use keystone::{EnclaveStatus, KeystoneDev};
+use riscv_sv39::*;
 
 /// The enclave page manager, which supports linear page allocation for the page table.
 struct EnclaveMemoryManager<'a> {
