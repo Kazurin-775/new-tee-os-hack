@@ -87,6 +87,7 @@ name = "hal"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
+ "kconfig",
  "lazy_static",
  "memoffset",
  "num_enum",
@@ -94,6 +95,13 @@ dependencies = [
  "static_assertions",
  "uart_16550",
  "x86_64",
+]
+
+[[package]]
+name = "kconfig"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]

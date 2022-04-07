@@ -8,8 +8,7 @@ use x86_64::{
 pub struct HeapFrameAlloc;
 
 pub const LAYOUT_4K_PAGE: Layout = unsafe { Layout::from_size_align_unchecked(0x1000, 0x1000) };
-pub const MIRROR_BASE_VIRT: VirtAddr =
-    VirtAddr::new_truncate(crate::cfg::KERNEL_MIRROR_BASE as u64);
+pub const MIRROR_BASE_VIRT: VirtAddr = VirtAddr::new_truncate(hal::cfg::KERNEL_MIRROR_BASE as u64);
 
 unsafe impl FrameAllocator<Size4KiB> for HeapFrameAlloc {
     fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {

@@ -4,8 +4,6 @@
 
 extern crate alloc;
 
-pub use hal::cfg;
-
 mod elf;
 mod heap;
 mod interrupt;
@@ -30,7 +28,7 @@ fn start_kernel(boot_info: &'static mut BootInfo) -> ! {
     // assert that a mirror mapping is created at `KERNEL_MIRROR_BASE`
     assert_eq!(
         Option::from(boot_info.physical_memory_offset),
-        Some(cfg::KERNEL_MIRROR_BASE as u64)
+        Some(hal::cfg::KERNEL_MIRROR_BASE as u64)
     );
     heap::init(boot_info);
 

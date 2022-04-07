@@ -6,16 +6,17 @@ edition = "2018"
 [features]
 kernel = ["spin"]
 # Keystone part
-keystone = []
+keystone = ["kconfig/keystone"]
 keystone-rt = ["kernel", "keystone", "riscv", "riscv-sv39"]
 # x86 VM part
-x86-vm = []
+x86-vm = ["kconfig/x86-vm"]
 x86-vm-kernel = ["kernel", "x86-vm", "lazy_static", "uart_16550", "x86_64"]
 async-edge = ["async-trait"]
 #default = ["x86-vm-kernel"]
 
 [dependencies]
 cfg-if = "1.0.0"
+kconfig = { path = "../kconfig" }
 memoffset = "0.6.5"
 # no-std for num_enum
 num_enum = { version = "0.5.7", default-features = false }

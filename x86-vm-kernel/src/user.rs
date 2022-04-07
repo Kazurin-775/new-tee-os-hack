@@ -63,7 +63,7 @@ pub fn enter_user_mode() {
     // allocate pages for user stack
     unsafe {
         rpt.map_to(
-            Page::from_start_address(VirtAddr::new(crate::cfg::USER_STACK_TOP as u64 - 0x1000))
+            Page::from_start_address(VirtAddr::new(hal::cfg::USER_STACK_TOP as u64 - 0x1000))
                 .unwrap(),
             frame_allocator.allocate_frame().unwrap(),
             PageTableFlags::PRESENT

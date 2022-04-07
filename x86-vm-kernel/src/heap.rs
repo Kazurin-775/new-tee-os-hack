@@ -23,7 +23,7 @@ pub fn init(boot_info: &BootInfo) {
     log::debug!("Creating heap at {:?}", heap_region);
     unsafe {
         HEAP.init(
-            (crate::cfg::KERNEL_MIRROR_BASE + heap_region.start as usize) as *mut _,
+            (hal::cfg::KERNEL_MIRROR_BASE + heap_region.start as usize) as *mut _,
             (heap_region.end - heap_region.start) as usize,
         );
     }

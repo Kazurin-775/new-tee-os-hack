@@ -19,5 +19,5 @@ mod kernel;
 #[cfg(feature = "kernel")]
 pub use kernel::*;
 
-// expose platform-specific configuration items
-pub use sys::cfg;
+// export Kconfig
+pub use kconfig as cfg;

@@ -1,4 +1,3 @@
-pub mod cfg;
 #[cfg(feature = "kernel")]
 pub mod edge;
 #[cfg(feature = "kernel")]

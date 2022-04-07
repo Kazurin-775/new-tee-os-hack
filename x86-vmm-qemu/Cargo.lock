@@ -406,6 +406,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cfg-if",
+ "kconfig",
  "memoffset",
  "num_enum",
  "static_assertions",
@@ -449,6 +450,13 @@ name = "json"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
+
+[[package]]
+name = "kconfig"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+]
 
 [[package]]
 name = "kv-log-macro"
