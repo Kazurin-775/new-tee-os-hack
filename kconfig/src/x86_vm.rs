@@ -11,3 +11,5 @@ pub const USER_BASE: usize = 0x40_0000;
 // in Linux, this is one byte past the last address in userspace
 // (not a canonical virtual address in fact)
 pub const USER_STACK_TOP: usize = 0x8000_0000_0000;
+
+pub const EDGE_BUFFER_SIZE: usize = 0x3_000;

@@ -1,0 +1,15 @@
+[package]
+name = "edge-proto"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = { version = "0.1.53", optional = true }
+enum-as-inner = "0.4.0"
+log = "0.4.16"
+postcard = { version = "0.7.3", features = ["alloc"] }
+serde = { version = "1.0.136", default-features = false }
+
+[features]
+async = ["async-trait"]
+default = []

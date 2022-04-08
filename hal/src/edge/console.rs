@@ -1,21 +1,23 @@
 use core::fmt::Write;
 
-use crate::edge::{with_edge_caller, EdgeCallReq};
+use edge_proto::EdgeCallReq;
+
+use super::with_edge_caller;
 
 pub struct EdgeConsole;
 
 fn print_buffer_once(msg: &[u8]) {
     with_edge_caller(|caller| {
-        caller
-            .edge_mem()
-            .write_request(EdgeCallReq::EdgeCallPrint)
-            .write_buffer(msg);
-        unsafe { caller.edge_call() };
+        caller.write_header(&EdgeCallReq::Print {
+            len: msg.len() as u64,
+        }).unwrap();
+        caller.write_data(msg).unwrap();
+        caller.kick().unwrap();
     })
 }
 
 pub fn print_str(msg: &str) {
-    for chunk in msg.as_bytes().chunks(crate::edge::EDGE_BUFFER_SIZE) {
+    for chunk in msg.as_bytes().chunks(super::EDGE_BUFFER_SIZE) {
         print_buffer_once(chunk);
     }
 }

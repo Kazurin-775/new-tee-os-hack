@@ -7,6 +7,7 @@ extern crate alloc;
 pub mod arch;
 
 /// Edge call APIs.
+#[cfg(feature = "kernel")]
 pub mod edge;
 
 /// Architecture-specific data structures and implementations.

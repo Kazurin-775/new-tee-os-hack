@@ -10,16 +10,25 @@ keystone = ["kconfig/keystone"]
 keystone-rt = ["kernel", "keystone", "riscv", "riscv-sv39"]
 # x86 VM part
 x86-vm = ["kconfig/x86-vm"]
-x86-vm-kernel = ["kernel", "x86-vm", "lazy_static", "uart_16550", "x86_64"]
+x86-vm-kernel = [
+    "kernel",
+    "x86-vm",
+    "lazy_static",
+    "postcard",
+    "uart_16550",
+    "x86_64",
+]
 async-edge = ["async-trait"]
-#default = ["x86-vm-kernel"]
+default = []
 
 [dependencies]
 cfg-if = "1.0.0"
+edge-proto = { path = "../edge-proto" }
 kconfig = { path = "../kconfig" }
+log = "0.4.16"
 memoffset = "0.6.5"
-# no-std for num_enum
-num_enum = { version = "0.5.7", default-features = false }
+num_enum = { version = "0.5.7", default-features = false } # no-std
+postcard = { version = "0.7.3", features = ["alloc"], optional = true }
 riscv = { git = "https://github.com/rust-embedded/riscv.git", rev = "cd31989", features = [
     "inline-asm",
 ], optional = true }

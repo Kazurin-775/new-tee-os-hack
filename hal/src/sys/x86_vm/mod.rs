@@ -10,12 +10,9 @@ pub fn exit_enclave(retval: usize) {
     // send a "stream close" signal
     crate::edge::with_edge_caller(|caller| {
         caller
-            .edge_mem()
-            .write_request(crate::edge::EdgeCallReq::EdgeCallStreamClose)
-            .write_buffer(&[]);
-        unsafe {
-            caller.edge_call();
-        }
+            .write_header(&edge_proto::EdgeCallReq::StreamShutdown)
+            .unwrap();
+        caller.kick().unwrap();
     });
     crate::arch::x86_vm::qemu::exit_qemu(retval as u32);
 }

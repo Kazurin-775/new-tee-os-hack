@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
+edge-proto = { path = "../edge-proto" }
 edge-responder = { path = "../edge-responder" }
 hal = { path = "../hal", features = ["keystone"] }
 nix = "0.23.1"

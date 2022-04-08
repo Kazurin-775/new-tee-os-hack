@@ -1,9 +1,10 @@
 [package]
 name = "edge-responder"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-failure = "0.1.8"
-hal = { path = "../hal" }
+anyhow = "1.0.56"
+edge-proto = { path = "../edge-proto", features = ["async"] }
+log = "0.4.16"
 nix = "0.23.1"

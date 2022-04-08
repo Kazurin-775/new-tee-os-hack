@@ -1,5 +1,6 @@
 use alloc::vec;
-use hal::edge::{EdgeCallInfo, EdgeCallReq, EDGE_BUFFER_SIZE};
+use edge_proto::EdgeCallReq;
+use hal::edge::EDGE_BUFFER_SIZE;
 
 use super::SyscallHandler;
 use crate::syscall_try;
@@ -9,16 +10,15 @@ pub const SYSCALL_WRITE: SyscallHandler = SyscallHandler::Syscall3(syscall_write
 unsafe fn edge_write(fd: usize, buf: &[u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
         caller
-            .edge_mem()
-            .write_request(EdgeCallReq::EdgeCallSyscall)
-            .write_info(EdgeCallInfo::SyscallWrite {
+            .write_header(&EdgeCallReq::SyscallWrite {
                 fd: fd as u64,
                 len: buf.len() as u64,
             })
-            .write_buffer(buf);
-        caller.edge_call();
+            .unwrap();
+        caller.write_data(buf).unwrap();
+        caller.kick().unwrap();
 
-        caller.edge_mem().read_syscall_result()
+        caller.read_header().unwrap().into_syscall_resp().unwrap() as isize
     })
 }
 

@@ -2,7 +2,8 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 mod keystone;
 
-use hal::{cfg::*, edge::EdgeMemory};
+use edge_proto::server::SharedMemEdgeStream;
+use hal::cfg::*;
 use keystone::{EnclaveStatus, KeystoneDev};
 use riscv_sv39::*;
 
@@ -162,7 +163,9 @@ fn main() {
         .expect("failed to finalize enclave");
 
     let edge_mem = unsafe { enclave.map_mem(0, PAGE_SIZE) }.expect("failed to map untrusted memory")
-        as *mut EdgeMemory;
+        as *mut u8;
+    let mut edge_stream =
+        SharedMemEdgeStream::new(edge_mem, 0x1_000, unsafe { edge_mem.add(0x1_000) }, 0x3_000);
 
     let mut status = enclave.run().expect("failed to run enclave");
     loop {
@@ -173,10 +176,8 @@ fn main() {
             }
             EnclaveStatus::Interrupted => (),
             EnclaveStatus::EdgeCallHost => {
-                //println!("Edge call requested");
-                unsafe {
-                    edge_responder::handle_edge_call(edge_mem);
-                }
+                edge_responder::handle_edge_call(&mut edge_stream)
+                    .expect("failed to handle edge call");
             }
             _ => panic!("Unexpected enclave status: {:?}", status),
         }

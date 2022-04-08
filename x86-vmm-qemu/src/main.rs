@@ -1,10 +1,11 @@
 mod edge_call;
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+};
 
-use async_std::process::Command;
-
-pub async fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
+pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     let bootloader_manifest_path = bootloader_locator::locate_bootloader("bootloader").unwrap();
     let kernel_manifest_path = locate_cargo_manifest::locate_manifest().unwrap();
 
@@ -23,7 +24,7 @@ pub async fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
         .arg(kernel_binary_path.parent().unwrap());
     build_cmd.arg("--firmware").arg("bios");
 
-    if !build_cmd.status().await.unwrap().success() {
+    if !build_cmd.status().unwrap().success() {
         panic!("build failed");
     }
 
@@ -39,8 +40,7 @@ pub async fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     disk_image
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
+fn main() {
     env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .init();
@@ -52,10 +52,10 @@ async fn main() {
         let path = PathBuf::from(args.next().unwrap());
         path.canonicalize().unwrap()
     };
-    let disk_img = create_disk_images(&kernel_binary_path).await;
+    let disk_img = create_disk_images(&kernel_binary_path);
 
     // start edge call server
-    let edge_call_server = edge_call::EdgeCallServer::new().await.unwrap();
+    let edge_call_server = edge_call::EdgeCallServer::new().unwrap();
 
     // run QEMU
     log::info!("Starting QEMU");
@@ -80,11 +80,11 @@ async fn main() {
 
     let mut run_process = run_cmd.spawn().unwrap();
     // Note: no race condition here, since the socket address is already bound to in `new()`
-    edge_call_server.listen().await.unwrap();
+    edge_call_server.listen().unwrap();
     log::info!("Edge call server connection closed");
 
     // check the exit status of QEMU
-    let exit_status = run_process.status().await.unwrap().code().unwrap_or(1);
+    let exit_status = run_process.wait().unwrap().code().unwrap_or(1);
     // trick: (2n+1) => n
     let exit_status = (exit_status - 1) / 2;
     if exit_status != 0 {
