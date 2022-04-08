@@ -5,7 +5,9 @@ pub fn enforce() {
         Cr4::update(|flags| {
             flags.set(Cr4Flags::SUPERVISOR_MODE_ACCESS_PREVENTION, true);
             flags.set(Cr4Flags::SUPERVISOR_MODE_EXECUTION_PROTECTION, true);
-            flags.set(Cr4Flags::USER_MODE_INSTRUCTION_PREVENTION, true);
+            // The following line hangs the VM on qemu 6.2 with an emulated CPU.
+            // TODO: set flags according to available CPU features
+            // flags.set(Cr4Flags::USER_MODE_INSTRUCTION_PREVENTION, true);
         });
     }
 }

@@ -9,9 +9,10 @@ pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     let bootloader_manifest_path = bootloader_locator::locate_bootloader("bootloader").unwrap();
     let kernel_manifest_path = locate_cargo_manifest::locate_manifest().unwrap();
 
-    let mut build_cmd = Command::new(env!("CARGO"));
+    // FIXME: there may be a bug in the bootloader crate
+    let mut build_cmd = Command::new("cargo");
     build_cmd.current_dir(bootloader_manifest_path.parent().unwrap());
-    build_cmd.arg("builder");
+    build_cmd.arg("+nightly").arg("builder");
     build_cmd
         .arg("--kernel-manifest")
         .arg(&kernel_manifest_path);
@@ -42,7 +43,7 @@ pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
 
 fn main() {
     env_logger::builder()
-        .filter_level(log::LevelFilter::Info)
+        .filter_level(log::LevelFilter::Trace)
         .init();
     let mut args = std::env::args().skip(1); // skip executable name
 

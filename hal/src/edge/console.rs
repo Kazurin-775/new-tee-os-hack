@@ -8,12 +8,15 @@ pub struct EdgeConsole;
 
 fn print_buffer_once(msg: &[u8]) {
     with_edge_caller(|caller| {
-        caller.write_header(&EdgeCallReq::Print {
-            len: msg.len() as u64,
-        }).unwrap();
+        caller
+            .write_header(&EdgeCallReq::Print {
+                len: msg.len() as u64,
+            })
+            .unwrap();
         caller.write_data(msg).unwrap();
         caller.kick().unwrap();
-    })
+        assert!(caller.read_header().unwrap().is_ok());
+    });
 }
 
 pub fn print_str(msg: &str) {

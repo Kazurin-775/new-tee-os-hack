@@ -1,5 +1,5 @@
 use std::{
-    io::{Read, Write},
+    io::{ErrorKind, Read, Write},
     os::unix::net::{UnixListener, UnixStream},
 };
 
@@ -39,17 +39,23 @@ impl EdgeStream for EdgeCallClient {
             log::error!("Failed to serialize edge call header: {}", err);
             EdgeCallError
         })?;
-        self.0.write_all(&data).map_err(|_| EdgeCallError)
+        self.write_data(&data)
     }
 
     fn write_data(&mut self, data: &[u8]) -> Result<(), EdgeCallError> {
+        self.0
+            .write_all(&(data.len() as u32).to_le_bytes())
+            .map_err(|_| EdgeCallError)?;
         self.0.write_all(data).map_err(|_| EdgeCallError)
     }
 }
 
 impl EdgeCallServer {
     pub fn new() -> anyhow::Result<EdgeCallServer> {
-        std::fs::remove_file("edge.sock").context("remove edge.sock")?;
+        match std::fs::remove_file("edge.sock") {
+            Err(err) if err.kind() == ErrorKind::NotFound => (),
+            other => other.context("remove edge.sock")?,
+        }
         let sock = UnixListener::bind("edge.sock").context("bind to edge.sock")?;
         Ok(EdgeCallServer { sock })
     }
@@ -65,8 +71,6 @@ impl EdgeCallServer {
                     log::info!("Edge call client signaled exit");
                     edge_stream.write_header(&EdgeCallResp::Ok).compat()?;
                     edge_stream.0.flush()?;
-                    // trick: wait for QEMU to properly receive data
-                    assert_eq!(edge_stream.0.read(&mut [0])?, 0);
                     break;
                 }
                 edge_responder::handle_edge_call_req(&mut edge_stream, req)

@@ -94,6 +94,7 @@ impl EdgeFile {
                 })
                 .unwrap();
             caller.kick().unwrap();
+            assert!(caller.read_header().unwrap().is_ok());
         });
     }
 
