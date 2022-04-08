@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
-#![feature(asm, global_asm)]
 
-global_asm!(
+core::arch::global_asm!(
     r#"
     .section .text.entry
     .global _start
@@ -17,7 +16,7 @@ const EXIT: usize = 60;
 static MSG: &str = "Hello, world!\n";
 
 unsafe fn syscall(nr: usize, arg0: usize, arg1: usize, arg2: usize) {
-    asm!(
+    core::arch::asm!(
         "syscall",
         inout("rax") nr => _,
         in("rdi") arg0,
@@ -39,6 +38,6 @@ extern "C" fn main() {
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     unsafe {
-        asm!("ud2", options(noreturn));
+        core::arch::asm!("ud2", options(noreturn));
     }
 }
