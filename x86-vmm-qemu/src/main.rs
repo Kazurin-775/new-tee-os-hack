@@ -5,6 +5,8 @@ use std::{
     process::Command,
 };
 
+use anyhow::Context;
+
 pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     let bootloader_manifest_path = bootloader_locator::locate_bootloader("bootloader").unwrap();
     let kernel_manifest_path = locate_cargo_manifest::locate_manifest().unwrap();
@@ -41,7 +43,7 @@ pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     disk_image
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     env_logger::builder()
         .filter_level(log::LevelFilter::Trace)
         .init();
@@ -50,46 +52,53 @@ fn main() {
     // build BIOS boot image
     log::info!("Building BIOS boot image");
     let kernel_binary_path = {
-        let path = PathBuf::from(args.next().unwrap());
+        let path = PathBuf::from(args.next().expect("kernel binary path not specified"));
         path.canonicalize().unwrap()
     };
     let disk_img = create_disk_images(&kernel_binary_path);
 
     // start edge call server
-    let edge_call_server = edge_call::EdgeCallServer::new().unwrap();
+    let edge_call_server = edge_call::EdgeCallServer::new().context("start edge call server")?;
 
     // run QEMU
     log::info!("Starting QEMU");
     let mut run_cmd = Command::new("qemu-system-x86_64");
-    // attach boot drive
-    run_cmd
-        .arg("-drive")
-        .arg(format!("format=raw,file={}", disk_img.display()));
-    // attach an output serial console
-    run_cmd.arg("-serial").arg("file:/dev/stdout");
-    // attach edge call serial device
-    run_cmd
-        .arg("-chardev")
-        .arg("socket,path=edge.sock,id=tee-edge");
-    run_cmd.arg("-device").arg("isa-serial,chardev=tee-edge");
-    // attach a device for shutting down the VM
-    run_cmd
-        .arg("-device")
-        .arg("isa-debug-exit,iobase=0xf4,iosize=0x04");
-    // security options
-    run_cmd.arg("-cpu").arg("kvm64,smap,smep");
+    run_cmd.args([
+        // attach boot drive
+        "-drive",
+        &format!("format=raw,file={}", disk_img.display()),
+        // attach an output serial console
+        "-serial",
+        "file:/dev/stdout",
+        // attach edge call serial device
+        "-chardev",
+        "socket,path=edge.sock,id=tee-edge",
+        "-device",
+        "isa-serial,chardev=tee-edge",
+        // attach a device for shutting down the VM
+        "-device",
+        "isa-debug-exit,iobase=0xf4,iosize=0x04",
+        // security options
+        "-cpu",
+        "kvm64,smap,smep",
+    ]);
 
-    let mut run_process = run_cmd.spawn().unwrap();
+    let mut run_process = run_cmd.spawn().context("spawn qemu process")?;
     // Note: no race condition here, since the socket address is already bound to in `new()`
-    edge_call_server.listen().unwrap();
-    log::info!("Edge call server connection closed");
+    edge_call_server.listen().context("run edge call server")?;
+    log::info!("Edge call server closed");
 
     // check the exit status of QEMU
-    let exit_status = run_process.wait().unwrap().code().unwrap_or(1);
-    // trick: (2n+1) => n
-    let exit_status = (exit_status - 1) / 2;
-    if exit_status != 0 {
-        log::warn!("QEMU exited with status {}", exit_status);
-        std::process::exit(exit_status);
+    if let Some(exit_status) = run_process.wait().context("wait for qemu process")?.code() {
+        // trick: (2n+1) => n
+        let exit_status = (exit_status - 1) / 2;
+        if exit_status != 0 {
+            log::warn!("QEMU exited with status {}", exit_status);
+            std::process::exit(exit_status);
+        }
+    } else {
+        log::warn!("QEMU exited with a signal");
     }
+
+    Ok(())
 }

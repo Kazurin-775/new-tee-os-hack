@@ -64,18 +64,21 @@ impl EdgeCallServer {
         log::info!("Listening for edge calls at edge.sock");
         let mut incoming = self.sock.incoming();
         if let Some(stream) = incoming.next() {
-            let mut edge_stream = EdgeCallClient(stream?, Vec::new());
+            let mut edge_stream = EdgeCallClient(stream.context("accept connection")?, Vec::new());
             loop {
-                let req = edge_stream.read_header().compat()?;
+                let req = edge_stream.read_header().compat().context("read header")?;
                 if req == EdgeCallReq::StreamShutdown {
                     log::info!("Edge call client signaled exit");
-                    edge_stream.write_header(&EdgeCallResp::Ok).compat()?;
-                    edge_stream.0.flush()?;
+                    edge_stream
+                        .write_header(&EdgeCallResp::Ok)
+                        .compat()
+                        .context("write header")?;
+                    edge_stream.0.flush().context("flush")?;
                     break;
                 }
                 edge_responder::handle_edge_call_req(&mut edge_stream, req)
                     .context("handle edge call")?;
-                edge_stream.0.flush()?;
+                edge_stream.0.flush().context("flush")?;
             }
         }
         Ok(())
