@@ -6,6 +6,8 @@ edition = "2018"
 [dependencies]
 edge-proto = { path = "../edge-proto" }
 edge-responder = { path = "../edge-responder" }
+env_logger = "0.9.0"
 hal = { path = "../hal", features = ["keystone"] }
+log = "0.4.16"
 nix = "0.23.1"
 riscv-sv39 = { path = "../riscv-sv39" }

@@ -91,6 +91,10 @@ fn copy_to_enclave(enclave: &KeystoneDev, src: &[u8], dest_offset: usize) {
 }
 
 fn main() {
+    env_logger::builder()
+        .filter_level(log::LevelFilter::Trace)
+        .init();
+
     let mut kernel_file = File::open("keystone-rt.bin").expect("failed to open keystone-rt.bin");
     // keystone-rt.bin contains everything until _end
     let kernel_mem_size = kernel_file
@@ -162,8 +166,8 @@ fn main() {
         )
         .expect("failed to finalize enclave");
 
-    let edge_mem = unsafe { enclave.map_mem(0, PAGE_SIZE) }.expect("failed to map untrusted memory")
-        as *mut u8;
+    let edge_mem =
+        unsafe { enclave.map_mem(0, UTM_SIZE) }.expect("failed to map untrusted memory") as *mut u8;
     let mut edge_stream =
         SharedMemEdgeStream::new(edge_mem, 0x1_000, unsafe { edge_mem.add(0x1_000) }, 0x3_000);
 
