@@ -8,6 +8,7 @@ edition = "2021"
 hal = { path = "../hal", features = ["sgx"] }
 kconfig = { path = "../kconfig", features = ["sgx"] }
 linked_list_allocator = "0.9.1"
+log = "0.4.16"
 spin = { version = "0.9.2", features = ["once"] }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]

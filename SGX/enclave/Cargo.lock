@@ -384,6 +384,7 @@ dependencies = [
  "hal",
  "kconfig",
  "linked_list_allocator",
+ "log",
  "sgx_trts",
  "sgx_types",
  "spin",
