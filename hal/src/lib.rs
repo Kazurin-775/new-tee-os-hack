@@ -7,17 +7,14 @@ extern crate alloc;
 pub mod arch;
 
 /// Edge call APIs.
-#[cfg(feature = "kernel")]
 pub mod edge;
 
 /// Architecture-specific data structures and implementations.
 /// Private to this crate.
 mod sys;
 
-#[cfg(feature = "kernel")]
 /// Kernel mode specific items (e.g. `copy_from_user`).
 mod kernel;
-#[cfg(feature = "kernel")]
 pub use kernel::*;
 
 // export Kconfig

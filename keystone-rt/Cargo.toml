@@ -6,9 +6,9 @@ edition = "2018"
 [dependencies]
 elf-loader = { path = "../elf-loader" }
 executor = { git = "https://github.com/rcore-os/executor.git", rev = "04b6b7b" }
-hal = { path = "../hal", features = ["keystone-rt"] }
+hal = { path = "../hal", features = ["keystone"] }
 kmalloc = { path = "../kmalloc" }
-linux-abi = { path = "../linux-abi", features = ["keystone"] }
+linux-abi = { path = "../linux-abi" }
 log = "0.4.16"
 # Waiting for llvm_asm fixes to be released
 riscv = { git = "https://github.com/rust-embedded/riscv.git", rev = "cd31989", features = [

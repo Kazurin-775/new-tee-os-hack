@@ -3,9 +3,6 @@ name = "linux-abi"
 version = "0.1.0"
 edition = "2018"
 
-[features]
-keystone = ["hal/keystone-rt"]
-
 [dependencies]
 edge-proto = { path = "../edge-proto" }
 hal = { path = "../hal" }
