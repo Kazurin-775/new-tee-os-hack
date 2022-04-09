@@ -19,7 +19,6 @@ panic = "abort"
 lto = true
 
 [dependencies]
-elfloader = { path = "../elfloader" }
 sgx-libos = { path = "../../sgx-libos" }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]

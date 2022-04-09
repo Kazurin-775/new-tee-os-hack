@@ -17,14 +17,3 @@ pub unsafe fn sgx_alloc_rsrv_mem_prm(desired_addr:u64,length:u64)->Result<&'stat
         Ok(core::slice::from_raw_parts_mut(addr,length as usize))
     }
 }
-
-
-use linked_list_allocator::LockedHeap;
-
-#[global_allocator]
-pub static MYALLOCATOR: LockedHeap = LockedHeap::empty();
-
-#[alloc_error_handler]
-fn default_handler(layout: core::alloc::Layout) -> ! {
-    panic!("memory allocation of {} bytes failed", layout.size())
-}

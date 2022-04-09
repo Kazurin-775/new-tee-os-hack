@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(alloc_error_handler)]
 
 use alloc::vec;
 use sgx_trts::enclave;
@@ -9,9 +10,10 @@ extern crate alloc;
 use spin::Once;
 
 // pub mod syscall;
-pub mod trap;
+mod trap;
 #[macro_use]
-pub mod uart;
+mod uart;
+mod heap;
 pub mod panic;
 
 static EDGE_BUF: Once<(usize, usize)> = Once::new();
@@ -24,7 +26,7 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
     unsafe {
         let heap_base = enclave::get_heap_base() as _;
         let heap_size = enclave::get_heap_size();
-        elfloader::MYALLOCATOR.lock().init(heap_base, heap_size);
+        heap::ALLOCATOR.lock().init(heap_base, heap_size);
 
         //demo of ocall
         // let info="hello world";
@@ -40,12 +42,13 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
         // let entry = elf.entry() as usize;
         // let sp=elfloader::elfloader::ElfFile::prepare_libc_args();
 
-        let s = "SGX TEE 操作系统";
+        uart_println!("SGX TEE OS is running!");
         uart_println!(
-            "[:] {} HeapAddr: {:#X} UtmAddr: {:#X}",
-            s,
+            "HeapAddr: {:#X}, HeapSize: {:#X}, UtmAddr: {:#X}, UtmSize: {:#X}",
             heap_base as usize,
+            heap_size,
             utm_base as usize,
+            utm_size,
         );
 
         let alloc_test = vec![1, 2, 3];

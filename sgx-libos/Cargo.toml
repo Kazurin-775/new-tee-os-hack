@@ -5,8 +5,8 @@ authors = ["zjuliangxun <m13009809900@163.com>"]
 edition = "2021"
 
 [dependencies]
-elfloader = { path = "../SGX/elfloader" }
 kconfig = { path = "../kconfig", features = ["sgx"] }
+linked_list_allocator = "0.9.0"
 spin = { version = "0.9.2", features = ["once"] }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
