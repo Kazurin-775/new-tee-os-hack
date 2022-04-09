@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.56"
 env_logger = "0.9.0"
+kconfig = { path = "../kconfig", features = ["sgx"] }
 log = "0.4.16"
 libc = "0.2.121"
 nix = "0.23.1"

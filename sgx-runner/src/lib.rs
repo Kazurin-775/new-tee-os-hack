@@ -4,7 +4,6 @@ use sgx_types::*;
 use sgx_urts::SgxEnclave;
 
 const ENCLAVE_FILE: &str = "enclave.signed.so";
-const SHARED_MEM_SIZE: usize = 0x400;
 
 extern "C" {
     fn rt_main(
@@ -43,7 +42,7 @@ pub fn main() -> anyhow::Result<()> {
         .map_err(|status| anyhow::anyhow!("failed to initialize enclave: {}", status.as_str()))?;
     log::debug!("Initialized enclave with ID = {}", enclave.geteid());
 
-    let edge_mem = unsafe { libc::malloc(SHARED_MEM_SIZE) };
+    let edge_mem = unsafe { libc::malloc(kconfig::EDGE_MEM_SIZE) };
     log::debug!("Shared memory allocated, address = {:?}", edge_mem);
 
     // let mut kernel_file = File::open("sgx-rt.bin").expect("failed to open the bin");
@@ -61,7 +60,7 @@ pub fn main() -> anyhow::Result<()> {
             enclave.geteid(),
             &mut retval,
             edge_mem as _,
-            SHARED_MEM_SIZE,
+            kconfig::EDGE_MEM_SIZE,
         )
     };
     match sgx_result {
