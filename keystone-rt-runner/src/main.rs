@@ -3,7 +3,7 @@ use std::{collections::HashMap, fs::File, io::Read};
 mod keystone;
 
 use edge_proto::server::SharedMemEdgeStream;
-use hal::cfg::*;
+use kconfig::*;
 use keystone::{EnclaveStatus, KeystoneDev};
 use riscv_sv39::*;
 
