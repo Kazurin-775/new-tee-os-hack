@@ -9,3 +9,4 @@ cfg-if = "1.0.0"
 [features]
 keystone = []
 x86-vm = []
+sgx = []

@@ -1,17 +1,13 @@
 [package]
-name = "sgx-rt"
+name = "sgx-libos"
 version = "0.1.0"
 authors = ["zjuliangxun <m13009809900@163.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-linux-abi ={ path = "../linux-abi"}
-
-# enable no-std in phf
-[dependencies.phf]
-version = "0.10.0"
-default-features = false
-features = ["macros"]
+elfloader = { path = "../SGX/elfloader" }
+kconfig = { path = "../kconfig", features = ["sgx"] }
+spin = { version = "0.9.2", features = ["once"] }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
 sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }

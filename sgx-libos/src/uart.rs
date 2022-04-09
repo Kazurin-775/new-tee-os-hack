@@ -2,14 +2,21 @@ use core::fmt::Write;
 
 pub struct UnsafeUart;
 
+extern "C" {
+    fn ocall_syscall_write(eid: u64, fd: usize, ptr: *const u8, len: usize) -> isize;
+}
+
 impl Write for UnsafeUart {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        let nr=1;
-        match crate::syscall::SYSCALL_MAP.get(&nr).map(|&f| f) {
-            Some(crate::syscall::SyscallHandler::Syscall3(f))=>unsafe{
-                f(0,s.as_ptr() as usize,s.len() as usize);
-            },
-            _=>panic!("Not a write syscall!"),
+        let edge_buf = crate::EDGE_BUF.get().unwrap();
+        let edge_buf =
+            unsafe { core::slice::from_raw_parts_mut(edge_buf.0 as *mut u8, edge_buf.1) };
+
+        for chunk in s.as_bytes().chunks(kconfig::EDGE_BUFFER_SIZE) {
+            edge_buf[0..chunk.len()].copy_from_slice(chunk);
+            unsafe {
+                ocall_syscall_write(0, 1, edge_buf.as_ptr(), chunk.len());
+            }
         }
         Ok(())
     }

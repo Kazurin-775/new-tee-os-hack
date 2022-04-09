@@ -1,5 +1,4 @@
 use core::convert::TryInto;
-pub use linux_abi::syscall::{SyscallHandler, SYSCALL_MAP};
 use sgx_types::{sgx_exception_info_t,int32_t};
 
 

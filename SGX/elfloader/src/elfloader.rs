@@ -104,7 +104,7 @@ use goblin::{
 };
 
 extern crate alloc;
-use alloc::alloc::{GlobalAlloc,alloc,dealloc, Layout};
+use alloc::alloc::{alloc, Layout};
 
 const PAGE_SIZE: usize = 0x1000;
 

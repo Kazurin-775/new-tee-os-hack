@@ -20,10 +20,7 @@ lto = true
 
 [dependencies]
 elfloader = { path = "../elfloader" }
-linux-abi = { path = "../linux-abi" }
-sgx-cfg = { path = "../sgx-cfg" }
-sgx-hal = { path = "../sgx-hal" }
-sgx-rt = { path = "../sgx-rt" }
+sgx-libos = { path = "../../sgx-libos" }
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
 sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
