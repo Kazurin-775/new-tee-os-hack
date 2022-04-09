@@ -10,8 +10,10 @@ extern crate alloc;
 // pub mod syscall;
 mod heap;
 mod klog;
-pub mod panic;
+mod panic;
 mod trap;
+
+pub use panic::panic_handler;
 
 #[no_mangle]
 pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {

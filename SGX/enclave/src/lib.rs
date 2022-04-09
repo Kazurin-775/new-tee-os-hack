@@ -5,7 +5,7 @@
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     // Forward the panic to sgx-libos's handler. This is due to a limitation of
     // the Rust compiler.
-    sgx_libos::panic::panic_handler(info)
+    sgx_libos::panic_handler(info)
 }
 
 #[no_mangle]
