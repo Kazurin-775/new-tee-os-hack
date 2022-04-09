@@ -1,5 +1,8 @@
 mod ocall;
 
+use std::sync::Mutex;
+
+use edge_proto::server::SharedMemEdgeStream;
 use sgx_types::*;
 use sgx_urts::SgxEnclave;
 
@@ -12,6 +15,15 @@ extern "C" {
         sharemem: *mut u8,
         memsz: usize,
     ) -> sgx_status_t;
+}
+
+lazy_static::lazy_static! {
+    static ref EDGE_MEM: Mutex<SharedMemEdgeStream> = Mutex::new(SharedMemEdgeStream::new(
+        core::ptr::null_mut(),
+        0,
+        core::ptr::null_mut(),
+        0,
+    ));
 }
 
 fn init_enclave() -> SgxResult<SgxEnclave> {
@@ -42,8 +54,10 @@ pub fn main() -> anyhow::Result<()> {
         .map_err(|status| anyhow::anyhow!("failed to initialize enclave: {}", status.as_str()))?;
     log::debug!("Initialized enclave with ID = {}", enclave.geteid());
 
-    let edge_mem = unsafe { libc::malloc(kconfig::EDGE_MEM_SIZE) };
+    let edge_mem = unsafe { libc::malloc(kconfig::EDGE_MEM_SIZE) } as *mut u8;
     log::debug!("Shared memory allocated, address = {:?}", edge_mem);
+    *EDGE_MEM.lock().unwrap() =
+        SharedMemEdgeStream::new(edge_mem, 0x1_000, unsafe { edge_mem.add(0x1_000) }, 0x3_000);
 
     // let mut kernel_file = File::open("sgx-rt.bin").expect("failed to open the bin");
     // let edge_mem_ref:&mut [u8]=core::slice::from_raw_parts_mut(edge_mem as *mut u8,SHARED_MEM_SIZE);

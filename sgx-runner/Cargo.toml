@@ -5,11 +5,14 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.56"
+edge-proto = { path = "../edge-proto" }
+edge-responder = { path = "../edge-responder" }
 env_logger = "0.9.0"
 kconfig = { path = "../kconfig", features = ["sgx"] }
 log = "0.4.16"
 libc = "0.2.121"
 nix = "0.23.1"
+lazy_static = "1.4.0"
 
 [target.'cfg(not(target_env = "sgx"))'.dependencies]
 sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }

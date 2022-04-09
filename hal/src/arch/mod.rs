@@ -4,3 +4,6 @@ pub mod keystone;
 
 #[cfg(all(target_arch = "x86_64", feature = "x86-vm"))]
 pub mod x86_vm;
+
+#[cfg(all(target_arch = "x86_64", feature = "sgx"))]
+pub mod sgx;

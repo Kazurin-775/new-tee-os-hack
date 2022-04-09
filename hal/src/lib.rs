@@ -14,7 +14,9 @@ pub mod edge;
 mod sys;
 
 /// Kernel mode specific items (e.g. `copy_from_user`).
+#[cfg(not(feature = "sgx"))]
 mod kernel;
+#[cfg(not(feature = "sgx"))]
 pub use kernel::*;
 
 // export Kconfig

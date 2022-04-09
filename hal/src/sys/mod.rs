@@ -7,6 +7,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "x86-vm")] {
         mod x86_vm;
         pub use x86_vm::*;
+    } else if #[cfg(feature = "sgx")] {
+        mod sgx;
+        pub use sgx::*;
     } else {
         compile_error!("unsupported platform configuration");
     }
