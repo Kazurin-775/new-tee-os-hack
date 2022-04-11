@@ -11,6 +11,7 @@ unsafe fn edge_write(fd: usize, buf: &[u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallWrite {
+                pid: 1, // FIXME
                 fd: fd as u64,
                 len: buf.len() as u64,
             })

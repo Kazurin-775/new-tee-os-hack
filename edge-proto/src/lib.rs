@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub enum EdgeCallReq {
     Invalid,
     Print { len: u64 },
-    SyscallWrite { fd: u64, len: u64 },
+    SyscallWrite { pid: i32, fd: u64, len: u64 },
     FileOpen { path: String },
     FileRead { file_obj: u64, len: u32 },
     FileGetSize { file_obj: u64 },

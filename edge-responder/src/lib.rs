@@ -1,10 +1,14 @@
 use anyhow::Context;
 use edge_proto::{server::EdgeStream, EdgeCallReq, EdgeCallResp};
+use error::{SyscallError, SyscallResult};
 
 use crate::error::EdgeErrorCompat;
 
 mod edge_file;
 pub mod error;
+mod fs_imp;
+mod pcb;
+mod syscall_imp;
 
 pub fn handle_edge_call(stream: &mut dyn EdgeStream) -> anyhow::Result<()> {
     let header = stream.read_header().compat().context("read header")?;
@@ -28,14 +32,8 @@ pub fn handle_edge_call_req(
                 .compat()
                 .context("write header")?;
         }
-        SyscallWrite { fd, len } => {
-            let result = nix::unistd::write(
-                fd as i32,
-                &stream.read_data().compat().context("read data")?[0..len as usize],
-            )
-            .map(|len| len.try_into().unwrap())
-            .map_err(|errno| errno as isize)
-            .unwrap_or_else(std::convert::identity);
+        SyscallWrite { pid, fd, len } => {
+            let result = syscall_imp::write(stream, pid, fd, len);
             write_syscall_result(stream, result).context("write result")?;
         }
         FileOpen { path } => {
@@ -80,9 +78,23 @@ pub fn handle_edge_call_req(
     Ok(())
 }
 
-fn write_syscall_result(stream: &mut dyn EdgeStream, result: isize) -> anyhow::Result<()> {
+fn write_syscall_result(
+    stream: &mut dyn EdgeStream,
+    result: SyscallResult<isize>,
+) -> anyhow::Result<()> {
+    let result_as_isize = match result {
+        Ok(r) => r,
+        Err(SyscallError::Linux(errno, None)) => errno as isize,
+        Err(SyscallError::Linux(errno, Some(err))) => {
+            log::warn!("Error handling syscall: {:#}", err);
+            errno as isize
+        }
+        Err(SyscallError::Internal(err)) => {
+            return Err(err).context("error handling syscall");
+        }
+    };
     stream
-        .write_header(&EdgeCallResp::SyscallResp(result as i64))
+        .write_header(&EdgeCallResp::SyscallResp(result_as_isize as i64))
         .compat()
 }
 

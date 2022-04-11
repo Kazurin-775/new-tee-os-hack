@@ -6,5 +6,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.56"
 edge-proto = { path = "../edge-proto", features = ["async"] }
+lazy_static = "1.4.0"
 log = "0.4.16"
 nix = "0.23.1"
