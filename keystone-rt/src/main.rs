@@ -63,9 +63,29 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
                 }
             });
         entry = elf.entry() as usize;
+
+        // map an extra page for the initial stack
+        root_page_table.map_4k(
+            VirtAddr(hal::cfg::USER_STACK_END - 0x1_000),
+            PageTableEntry::for_phys(mem_mgr.virt2phys(crate::vm::alloc_page()))
+                .make_user()
+                .make_rwx(),
+        );
     }
 
-    let task = hal::task::Task::create(0x403000);
+    // Copy argv and envp to the user stack's end
+    let (user_stack_data, user_sp) = linux_abi::exec::prepare_user_stack_data(
+        hal::cfg::USER_STACK_END,
+        &linux_abi::exec::INIT_ARGV,
+        &linux_abi::exec::INIT_ENVP,
+    );
+    assert!(user_stack_data.len() < 0x1_000);
+    unsafe {
+        hal::mem::copy_to_user(&user_stack_data, user_sp as *mut u8);
+    }
+
+    log::debug!("Run keystone-init as init process");
+    let task = hal::task::Task::create(user_sp);
     let task_global = Arc::new(Mutex::new(task));
     let task_future = hal::task::TaskFuture::new(task_global.clone());
 
