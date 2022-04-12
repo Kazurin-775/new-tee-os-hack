@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+mod dir;
 mod file;
 
 use self::file::TeeFile;

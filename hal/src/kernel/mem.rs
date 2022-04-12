@@ -18,3 +18,27 @@ pub unsafe fn copy_to_user(kernel_mem: &[u8], user_mem: *mut u8) {
     }
     user_access_end();
 }
+
+pub unsafe fn strncpy_from_user(kernel_mem: &mut [u8], user_mem: *const u8) -> usize {
+    user_access_begin();
+
+    // naive implementation
+    let (mut cur, mut len) = (user_mem, 0);
+    while cur.read() != 0 && len < kernel_mem.len() {
+        cur = cur.add(1);
+        len += 1;
+    }
+    let effective_len = len;
+    if len < kernel_mem.len() && cur.read() == 0 {
+        len += 1;
+    }
+
+    {
+        let user_mem = core::slice::from_raw_parts(user_mem, len);
+        kernel_mem[0..len].copy_from_slice(user_mem);
+    }
+
+    user_access_end();
+
+    effective_len
+}

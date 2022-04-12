@@ -1,4 +1,5 @@
-mod fs;
+mod dir;
+mod file;
 pub mod listing;
 mod process;
 pub mod tables;

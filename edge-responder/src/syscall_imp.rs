@@ -28,3 +28,19 @@ pub fn write(stream: &mut dyn EdgeStream, pid: i32, fd: u64, len: u64) -> Syscal
 
     Ok(result)
 }
+
+pub fn mkdirat(
+    _stream: &mut dyn EdgeStream,
+    pid: i32,
+    fd: i32,
+    path: String,
+    mode: u32,
+) -> SyscallResult<isize> {
+    TASKS
+        .lock()
+        .unwrap()
+        .get(&pid)
+        .ok_or(anyhow::anyhow!("no such process"))?
+        .fs
+        .mkdirat(fd, &path, mode)
+}

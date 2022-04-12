@@ -3,5 +3,6 @@
 
 use super::*;
 
-pub use fs::SYSCALL_WRITE;
+pub use dir::SYSCALL_MKDIRAT;
+pub use file::SYSCALL_WRITE;
 pub use process::SYSCALL_EXIT;
