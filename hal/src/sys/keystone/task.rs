@@ -28,8 +28,10 @@ pub struct KernelCtx {
     s11: usize,
 }
 
-const KERNEL_STACK_LAYOUT: alloc::alloc::Layout =
-    unsafe { alloc::alloc::Layout::from_size_align_unchecked(0x4000, 0x1000) };
+const KERNEL_STACK_SIZE: usize = 0x4_000;
+const KERNEL_STACK_LAYOUT: alloc::alloc::Layout = unsafe {
+    alloc::alloc::Layout::from_size_align_unchecked(KERNEL_STACK_SIZE, kconfig::PAGE_SIZE)
+};
 
 impl UserCtx {
     pub fn from_user_sp(user_sp: usize) -> UserCtx {
@@ -44,8 +46,9 @@ impl KernelCtx {
     pub fn allocate_for(thread_ctx: *const UserCtx) -> KernelCtx {
         let kernel_stack = unsafe { alloc::alloc::alloc(KERNEL_STACK_LAYOUT) };
         assert!(!kernel_stack.is_null(), "failed to allocate kernel stack");
+        let kernel_stack_end = unsafe { kernel_stack.add(KERNEL_STACK_SIZE) };
         KernelCtx {
-            sp: kernel_stack as usize,
+            sp: kernel_stack_end as usize,
             ra: task_entry as usize,
             tp: thread_ctx as usize,
             ..Default::default()
