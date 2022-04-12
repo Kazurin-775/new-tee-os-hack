@@ -1,7 +1,5 @@
-use linked_list_allocator::LockedHeap;
-
 #[global_allocator]
-pub static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: sgx_alloc::System = sgx_alloc::System;
 
 #[alloc_error_handler]
 fn default_handler(layout: core::alloc::Layout) -> ! {

@@ -2,7 +2,6 @@
 #![feature(alloc_error_handler)]
 
 use alloc::vec;
-use sgx_trts::enclave;
 use sgx_types::sgx_status_t;
 
 extern crate alloc;
@@ -24,15 +23,13 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
     }
 
     // Initialize trap handler
-    // FIXME: can't this be put off until the heap is initialized?
     trap::trap_handler_init();
 
-    // Initialize heap
+    // Get heap information
     let (heap_base, heap_size);
     unsafe {
-        heap_base = enclave::get_heap_base() as _;
-        heap_size = enclave::get_heap_size();
-        heap::ALLOCATOR.lock().init(heap_base, heap_size);
+        heap_base = sgx_trts::enclave::get_heap_base();
+        heap_size = sgx_trts::enclave::get_heap_size();
     }
 
     // Log system
