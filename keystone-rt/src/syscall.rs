@@ -19,6 +19,9 @@ pub unsafe fn handle_syscall(frame: *mut TrapFrame) {
         Some(SyscallHandler::Syscall1(f)) => {
             result = f(arg0);
         }
+        Some(SyscallHandler::Syscall2(f)) => {
+            result = f(arg0, arg1);
+        }
         Some(SyscallHandler::Syscall3(f)) => {
             result = f(arg0, arg1, arg2);
         }

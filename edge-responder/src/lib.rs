@@ -45,6 +45,13 @@ pub fn handle_edge_call_req(
             let result = syscall_imp::mkdirat(stream, pid, fd, path, mode);
             write_syscall_result(stream, result).context("write result")?;
         }
+        SyscallChdir { pid, path } => {
+            let result = syscall_imp::chdir(stream, pid, path);
+            write_syscall_result(stream, result).context("write result")?;
+        }
+        SyscallGetCwd { pid } => {
+            syscall_imp::special_getcwd(stream, pid)?;
+        }
         FileOpen { path } => {
             write_anyhow_result(
                 stream,

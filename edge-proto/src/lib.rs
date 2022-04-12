@@ -26,6 +26,13 @@ pub enum EdgeCallReq {
         path: String,
         mode: u32,
     },
+    SyscallChdir {
+        pid: i32,
+        path: String,
+    },
+    SyscallGetCwd {
+        pid: i32,
+    },
     FileOpen {
         path: String,
     },
@@ -52,5 +59,6 @@ pub enum EdgeCallResp {
     SyscallResp(i64),
     Ok,
     OkWithU64(u64),
+    OkWithString(String),
     Error,
 }

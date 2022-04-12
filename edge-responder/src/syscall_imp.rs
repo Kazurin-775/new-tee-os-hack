@@ -1,7 +1,7 @@
 use std::{os::unix::prelude::AsRawFd, sync::Arc};
 
 use anyhow::Context;
-use edge_proto::server::EdgeStream;
+use edge_proto::{server::EdgeStream, EdgeCallResp};
 
 use crate::{
     error::{EdgeErrorCompat, SyscallResult},
@@ -43,4 +43,31 @@ pub fn mkdirat(
         .ok_or(anyhow::anyhow!("no such process"))?
         .fs
         .mkdirat(fd, &path, mode)
+}
+
+pub fn chdir(_stream: &mut dyn EdgeStream, pid: i32, path: String) -> SyscallResult<isize> {
+    TASKS
+        .lock()
+        .unwrap()
+        .get_mut(&pid)
+        .ok_or(anyhow::anyhow!("no such process"))?
+        .fs
+        .chdir(&path)
+        .map(|()| 0)
+        .map_err(Into::into)
+}
+
+pub fn special_getcwd(stream: &mut dyn EdgeStream, pid: i32) -> anyhow::Result<()> {
+    let cwd = TASKS
+        .lock()
+        .unwrap()
+        .get_mut(&pid)
+        .ok_or(anyhow::anyhow!("no such process"))?
+        .fs
+        .cwd();
+    stream
+        .write_header(&EdgeCallResp::OkWithString(cwd))
+        .compat()
+        .context("write header")?;
+    Ok(())
 }

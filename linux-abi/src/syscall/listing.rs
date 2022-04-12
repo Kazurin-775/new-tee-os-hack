@@ -3,6 +3,6 @@
 
 use super::*;
 
-pub use dir::SYSCALL_MKDIRAT;
+pub use dir::{SYSCALL_CHDIR, SYSCALL_GETCWD, SYSCALL_MKDIRAT};
 pub use file::SYSCALL_WRITE;
 pub use process::SYSCALL_EXIT;

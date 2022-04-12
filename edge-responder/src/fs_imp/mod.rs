@@ -1,8 +1,10 @@
 use std::{
     collections::HashMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
+mod cwd;
 mod dir;
 mod file;
 
@@ -11,6 +13,7 @@ use self::file::TeeFile;
 /// The file system context of a remote task.
 #[derive(Clone)]
 pub struct TaskFsContext {
+    cwd: PathBuf,
     fd_mappings: HashMap<i32, Arc<Mutex<TeeFile>>>,
 }
 
@@ -22,6 +25,9 @@ impl TaskFsContext {
         fd_mappings.insert(1, Arc::new(Mutex::new(TeeFile::Stdio(1))));
         fd_mappings.insert(2, Arc::new(Mutex::new(TeeFile::Stdio(2))));
 
-        TaskFsContext { fd_mappings }
+        TaskFsContext {
+            cwd: PathBuf::new(),
+            fd_mappings,
+        }
     }
 }

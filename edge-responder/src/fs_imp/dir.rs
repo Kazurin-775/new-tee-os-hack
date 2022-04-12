@@ -10,7 +10,8 @@ impl TaskFsContext {
             return Err(anyhow::anyhow!("only FD_ATCWD is supported").into());
         }
 
-        nix::unistd::mkdir(path, Mode::from_bits_truncate(mode))?;
+        let path = self.resolve_path(path);
+        nix::unistd::mkdir(&path, Mode::from_bits_truncate(mode))?;
 
         Ok(0)
     }

@@ -20,6 +20,9 @@ unsafe extern "C" fn handle_syscall(arg0: usize, arg1: usize, arg2: usize, nr: u
         Some(SyscallHandler::Syscall1(f)) => {
             result = f(arg0);
         }
+        Some(SyscallHandler::Syscall2(f)) => {
+            result = f(arg0, arg1);
+        }
         Some(SyscallHandler::Syscall3(f)) => {
             result = f(arg0, arg1, arg2);
         }
