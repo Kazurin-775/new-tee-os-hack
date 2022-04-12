@@ -9,6 +9,7 @@ pub enum SyscallHandler {
     Syscall1(unsafe fn(usize) -> isize),
     Syscall2(unsafe fn(usize, usize) -> isize),
     Syscall3(unsafe fn(usize, usize, usize) -> isize),
+    Syscall4(unsafe fn(usize, usize, usize, usize) -> isize),
 }
 
 #[macro_export]

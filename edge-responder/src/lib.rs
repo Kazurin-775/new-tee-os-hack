@@ -32,8 +32,25 @@ pub fn handle_edge_call_req(
                 .compat()
                 .context("write header")?;
         }
+        SyscallOpenAt {
+            pid,
+            dir_fd,
+            path,
+            flags,
+            mode,
+        } => {
+            let result = syscall_imp::openat(stream, pid, dir_fd, path, flags, mode);
+            write_syscall_result(stream, result).context("write result")?;
+        }
+        SyscallRead { pid, fd, len } => {
+            syscall_imp::special_read(stream, pid, fd, len)?;
+        }
         SyscallWrite { pid, fd, len } => {
             let result = syscall_imp::write(stream, pid, fd, len);
+            write_syscall_result(stream, result).context("write result")?;
+        }
+        SyscallClose { pid, fd } => {
+            let result = syscall_imp::close(stream, pid, fd);
             write_syscall_result(stream, result).context("write result")?;
         }
         SyscallMkdirAt {
@@ -100,10 +117,10 @@ fn write_syscall_result(
 ) -> anyhow::Result<()> {
     let result_as_isize = match result {
         Ok(r) => r,
-        Err(SyscallError::Linux(errno, None)) => errno as isize,
+        Err(SyscallError::Linux(errno, None)) => -(errno as isize),
         Err(SyscallError::Linux(errno, Some(err))) => {
             log::warn!("Error handling syscall: {:#}", err);
-            errno as isize
+            -(errno as isize)
         }
         Err(SyscallError::Internal(err)) => {
             return Err(err).context("error handling syscall");

@@ -15,10 +15,26 @@ pub enum EdgeCallReq {
     Print {
         len: u64,
     },
+    SyscallOpenAt {
+        pid: i32,
+        dir_fd: i32,
+        path: String,
+        flags: i32,
+        mode: u32,
+    },
+    SyscallRead {
+        pid: i32,
+        fd: i32,
+        len: u64,
+    },
     SyscallWrite {
         pid: i32,
-        fd: u64,
+        fd: i32,
         len: u64,
+    },
+    SyscallClose {
+        pid: i32,
+        fd: i32,
     },
     SyscallMkdirAt {
         pid: i32,

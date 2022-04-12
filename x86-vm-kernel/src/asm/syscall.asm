@@ -7,7 +7,7 @@ syscall_entry:
     xchg    gs:[0], rsp
 
     # save clobbered registers
-    # push    rax
+    # // push    rax
     push    rcx
     push    rdx
     push    rsi
@@ -19,6 +19,7 @@ syscall_entry:
 
     # construct C ABI arguments
     mov     rcx, rax
+    mov     r8, r10
 
     # jump to Rust code
     call    handle_syscall
@@ -33,7 +34,7 @@ syscall_entry:
     pop     rsi
     pop     rdx
     pop     rcx
-    # pop     rax
+    # // pop     rax
 
     # save kernel sp & load user sp
     xchg    gs:[0], rsp

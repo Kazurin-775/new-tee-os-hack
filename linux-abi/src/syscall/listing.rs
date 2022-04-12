@@ -4,5 +4,5 @@
 use super::*;
 
 pub use dir::{SYSCALL_CHDIR, SYSCALL_GETCWD, SYSCALL_MKDIRAT};
-pub use file::SYSCALL_WRITE;
+pub use file::{SYSCALL_CLOSE, SYSCALL_OPENAT, SYSCALL_READ, SYSCALL_WRITE};
 pub use process::SYSCALL_EXIT;
