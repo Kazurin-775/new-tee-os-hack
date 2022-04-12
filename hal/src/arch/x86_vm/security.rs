@@ -12,7 +12,7 @@ pub fn enforce() {
     }
 }
 
-fn set_smap(smap: bool) {
+pub fn set_smap(smap: bool) {
     unsafe {
         Cr4::update(|flags| {
             flags.set(Cr4Flags::SUPERVISOR_MODE_ACCESS_PREVENTION, smap);
