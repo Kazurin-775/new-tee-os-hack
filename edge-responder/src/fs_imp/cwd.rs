@@ -23,6 +23,12 @@ impl TaskFsContext {
                 }
             }
         }
+
+        // Fix a special case where the guest wants to open `.`
+        if cur.as_os_str() == "" {
+            cur.push(".");
+        }
+
         log::trace!("Resolve path: {:?}/{:?} -> {:?}", self.cwd, path, cur);
         // TODO: distinguish between `xxx/` and `xxx`
         cur
