@@ -233,3 +233,21 @@ pub fn special_fstat(stream: &mut dyn EdgeStream, pid: i32, fd: i32) -> anyhow::
 
     Ok(())
 }
+
+pub fn unlinkat(
+    _stream: &mut dyn EdgeStream,
+    pid: i32,
+    dir_fd: i32,
+    path: String,
+    flags: i32,
+) -> Result<isize, crate::error::SyscallError> {
+    TASKS
+        .lock()
+        .unwrap()
+        .get_mut(&pid)
+        .ok_or(anyhow::anyhow!("no such process"))?
+        .fs
+        .unlink_at(dir_fd, &path, flags)
+        .map(|()| 0)
+        .map_err(Into::into)
+}

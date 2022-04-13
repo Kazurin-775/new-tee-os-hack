@@ -12,6 +12,7 @@ pub const SYSCALL_CLOSE: SyscallHandler = SyscallHandler::Syscall1(syscall_close
 pub const SYSCALL_DUP: SyscallHandler = SyscallHandler::Syscall1(syscall_dup);
 pub const SYSCALL_DUP3: SyscallHandler = SyscallHandler::Syscall3(syscall_dup3);
 pub const SYSCALL_FSTAT: SyscallHandler = SyscallHandler::Syscall2(syscall_fstat);
+pub const SYSCALL_UNLINKAT: SyscallHandler = SyscallHandler::Syscall3(syscall_unlinkat);
 
 unsafe fn edge_read(fd: usize, buf: &mut [u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
@@ -197,5 +198,31 @@ unsafe fn syscall_fstat(fd: usize, stat: usize) -> isize {
         result
     });
     log::trace!("fstat({}, _) = {}", fd, result);
+    result
+}
+
+unsafe fn syscall_unlinkat(dir_fd: usize, path: usize, flags: usize) -> isize {
+    let mut path_buf = vec![0; crate::limits::PATH_MAX];
+    let path_len = hal::mem::strncpy_from_user(&mut path_buf, path as *const u8);
+    if path_len >= path_buf.len() {
+        log::error!("unlinkat: Path buffer overflow");
+        return Errno::EFAULT.as_neg_isize();
+    }
+    let path = core::str::from_utf8(&path_buf[0..path_len]).expect("path is not valid UTF-8");
+
+    let result = hal::edge::with_edge_caller(|caller| {
+        caller
+            .write_header(&EdgeCallReq::SyscallUnlinkAt {
+                pid: hal::task::current_pid(),
+                dir_fd: dir_fd as i32,
+                path: path.to_owned(),
+                flags: flags as i32,
+            })
+            .unwrap();
+        caller.kick().unwrap();
+
+        caller.read_header().unwrap().into_syscall_resp().unwrap() as isize
+    });
+    log::trace!("unlinkat({}, {:?}, {}) = {}", dir_fd, path, flags, result);
     result
 }

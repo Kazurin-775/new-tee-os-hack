@@ -83,6 +83,15 @@ pub fn handle_edge_call_req(
         SyscallFstat { pid, fd } => {
             syscall_imp::special_fstat(stream, pid, fd)?;
         }
+        SyscallUnlinkAt {
+            pid,
+            dir_fd,
+            path,
+            flags,
+        } => {
+            let result = syscall_imp::unlinkat(stream, pid, dir_fd, path, flags);
+            write_syscall_result(stream, result).context("write result")?;
+        }
         FileOpen { path } => {
             write_anyhow_result(
                 stream,

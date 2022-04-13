@@ -63,6 +63,12 @@ pub enum EdgeCallReq {
         pid: i32,
         fd: i32,
     },
+    SyscallUnlinkAt {
+        pid: i32,
+        dir_fd: i32,
+        path: String,
+        flags: i32,
+    },
     FileOpen {
         path: String,
     },

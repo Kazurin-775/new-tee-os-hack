@@ -12,6 +12,7 @@ pub static TABLE_GENERIC: Map<u32, SyscallHandler> = phf_map! {
     23u32 => SYSCALL_DUP,
     24u32 => SYSCALL_DUP3,
     34u32 => SYSCALL_MKDIRAT,
+    35u32 => SYSCALL_UNLINKAT,
     49u32 => SYSCALL_CHDIR,
     56u32 => SYSCALL_OPENAT,
     57u32 => SYSCALL_CLOSE,
@@ -35,5 +36,6 @@ pub static TABLE_X86_64: Map<u32, SyscallHandler> = phf_map! {
     217u32 => SYSCALL_GETDENTS64,
     257u32 => SYSCALL_OPENAT,
     258u32 => SYSCALL_MKDIRAT,
+    263u32 => SYSCALL_UNLINKAT,
     292u32 => SYSCALL_DUP3,
 };

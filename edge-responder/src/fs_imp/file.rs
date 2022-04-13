@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use nix::{fcntl::OFlag, sys::stat::Mode};
+use nix::{fcntl::OFlag, sys::stat::Mode, unistd::UnlinkatFlags};
 
 use crate::error::LinuxResult;
 
@@ -67,5 +67,27 @@ impl TaskFsContext {
         }
         self.fd_mappings.insert(dest_fd, src_fd);
         Ok(dest_fd)
+    }
+
+    pub fn unlink_at(&self, dir_fd: i32, path: &str, flags: i32) -> LinuxResult<()> {
+        let flags = match flags {
+            0 => UnlinkatFlags::NoRemoveDir,
+            nix::libc::AT_REMOVEDIR => UnlinkatFlags::RemoveDir,
+            other => {
+                log::warn!("unlinkat: unknown flags: {}", other);
+                return Err(nix::Error::EINVAL);
+            }
+        };
+        if dir_fd == nix::libc::AT_FDCWD {
+            let path = self.resolve_path(path);
+            nix::unistd::unlinkat(None, &path, flags)
+        } else {
+            log::debug!("unlinkat: dirfd = {}", dir_fd);
+            let dir_file = self.fd_mappings.get(&dir_fd).ok_or_else(|| {
+                log::warn!("unlinkat: unknown dir fd: {}", dir_fd);
+                nix::Error::EBADFD
+            })?;
+            nix::unistd::unlinkat(Some(dir_file.lock().unwrap().as_raw_fd()), path, flags)
+        }
     }
 }
