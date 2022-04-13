@@ -14,7 +14,7 @@ unsafe fn edge_read(fd: usize, buf: &mut [u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallRead {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
                 fd: fd as i32,
                 len: buf.len() as u64,
             })
@@ -34,7 +34,7 @@ unsafe fn edge_write(fd: usize, buf: &[u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallWrite {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
                 fd: fd as i32,
                 len: buf.len() as u64,
             })
@@ -58,7 +58,7 @@ unsafe fn syscall_openat(dir_fd: usize, path: usize, flags: usize, mode: usize) 
     let result = hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallOpenAt {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
                 dir_fd: dir_fd as i32,
                 path: path.to_owned(),
                 flags: flags as i32,
@@ -122,7 +122,7 @@ unsafe fn syscall_close(fd: usize) -> isize {
     let result = hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallClose {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
                 fd: fd as i32,
             })
             .unwrap();

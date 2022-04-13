@@ -21,7 +21,7 @@ unsafe fn syscall_mkdirat(fd: usize, path: usize, mode: usize) -> isize {
     let result = hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallMkdirAt {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
                 fd: fd as i32,
                 path: path.to_owned(),
                 mode: mode as u32,
@@ -39,7 +39,7 @@ unsafe fn syscall_getcwd(buf: usize, size: usize) -> isize {
     let cwd = hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallGetCwd {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
             })
             .unwrap();
         caller.kick().unwrap();
@@ -70,7 +70,7 @@ unsafe fn syscall_chdir(path: usize) -> isize {
     let result = hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallChdir {
-                pid: 1, // FIXME
+                pid: hal::task::current_pid(),
                 path: path.to_owned(),
             })
             .unwrap();

@@ -9,7 +9,7 @@ mod pid_pool;
 use crate::sys::task::*;
 pub use pid_pool::PidPool;
 
-pub type Pid = u32;
+pub type Pid = i32;
 
 pub static PID_POOL: Mutex<PidPool> = Mutex::new(PidPool::new());
 
@@ -109,4 +109,9 @@ impl Future for IdleTask {
         cx.waker().wake_by_ref();
         core::task::Poll::Pending
     }
+}
+
+pub fn current_pid() -> Pid {
+    // TODO: support multitasking
+    1
 }
