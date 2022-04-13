@@ -162,3 +162,45 @@ pub fn special_getcwd(stream: &mut dyn EdgeStream, pid: i32) -> anyhow::Result<(
         .context("write header")?;
     Ok(())
 }
+
+pub fn special_getdents64(
+    stream: &mut dyn EdgeStream,
+    pid: i32,
+    fd: i32,
+    len: u64,
+) -> anyhow::Result<()> {
+    let local_dir = Arc::clone(
+        TASKS
+            .lock()
+            .unwrap()
+            .get(&pid)
+            .ok_or(anyhow::anyhow!("no such process"))?
+            .fs
+            .find_fd(fd as i32)?,
+    );
+    let guard = local_dir.lock().unwrap();
+
+    let mut buf = vec![0; len as usize];
+    let result = unsafe {
+        nix::libc::syscall(
+            nix::libc::SYS_getdents64,
+            guard.as_raw_fd(),
+            buf.as_mut_ptr(),
+            buf.len(),
+        )
+    };
+
+    stream
+        .write_header(&EdgeCallResp::SyscallResp(result as i64))
+        .compat()
+        .context("write header")?;
+    if result > 0 {
+        let len = result as usize;
+        stream
+            .write_data(&buf[0..len])
+            .compat()
+            .context("write data")?;
+    }
+
+    Ok(())
+}

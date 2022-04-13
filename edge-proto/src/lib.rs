@@ -54,6 +54,11 @@ pub enum EdgeCallReq {
     SyscallGetCwd {
         pid: i32,
     },
+    SyscallGetDents64 {
+        pid: i32,
+        fd: i32,
+        len: u64,
+    },
     FileOpen {
         path: String,
     },

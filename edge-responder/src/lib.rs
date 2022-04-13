@@ -77,6 +77,9 @@ pub fn handle_edge_call_req(
         SyscallGetCwd { pid } => {
             syscall_imp::special_getcwd(stream, pid)?;
         }
+        SyscallGetDents64 { pid, fd, len } => {
+            syscall_imp::special_getdents64(stream, pid, fd, len)?;
+        }
         FileOpen { path } => {
             write_anyhow_result(
                 stream,
