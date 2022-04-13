@@ -29,6 +29,14 @@ impl TaskFsContext {
         self.fd_mappings.get(&fd).ok_or(nix::Error::EBADFD)
     }
 
+    fn find_free_fd(&self) -> i32 {
+        // naive implementation
+        (0..4096)
+            .filter(|fd| !self.fd_mappings.contains_key(fd))
+            .next()
+            .unwrap()
+    }
+
     pub fn open(&mut self, path: &str, flags: i32, mode: u32) -> LinuxResult<i32> {
         let path = self.resolve_path(&path);
         let fd = nix::fcntl::open(
@@ -38,11 +46,7 @@ impl TaskFsContext {
         )?;
         let file = Arc::new(Mutex::new(TeeFile::File(unsafe { File::from_raw_fd(fd) })));
 
-        // naive implementation
-        let dest_fd = (0..4096)
-            .filter(|fd| !self.fd_mappings.contains_key(fd))
-            .next()
-            .unwrap();
+        let dest_fd = self.find_free_fd();
         self.fd_mappings.insert(dest_fd, file);
         Ok(dest_fd)
     }
@@ -53,5 +57,15 @@ impl TaskFsContext {
         } else {
             Err(nix::Error::EBADFD)
         }
+    }
+
+    pub fn dup(&mut self, src_fd: i32, dest_fd: Option<i32>) -> LinuxResult<i32> {
+        let src_fd = Arc::clone(self.fd_mappings.get(&src_fd).ok_or(nix::Error::EBADFD)?);
+        let dest_fd = dest_fd.unwrap_or_else(|| self.find_free_fd());
+        if self.fd_mappings.remove(&dest_fd).is_some() {
+            log::debug!("dup2: overwriting fd {}", dest_fd);
+        }
+        self.fd_mappings.insert(dest_fd, src_fd);
+        Ok(dest_fd)
     }
 }

@@ -9,6 +9,8 @@ pub const SYSCALL_OPENAT: SyscallHandler = SyscallHandler::Syscall4(syscall_open
 pub const SYSCALL_READ: SyscallHandler = SyscallHandler::Syscall3(syscall_read);
 pub const SYSCALL_WRITE: SyscallHandler = SyscallHandler::Syscall3(syscall_write);
 pub const SYSCALL_CLOSE: SyscallHandler = SyscallHandler::Syscall1(syscall_close);
+pub const SYSCALL_DUP: SyscallHandler = SyscallHandler::Syscall1(syscall_dup);
+pub const SYSCALL_DUP3: SyscallHandler = SyscallHandler::Syscall3(syscall_dup3);
 
 unsafe fn edge_read(fd: usize, buf: &mut [u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
@@ -131,5 +133,48 @@ unsafe fn syscall_close(fd: usize) -> isize {
         caller.read_header().unwrap().into_syscall_resp().unwrap() as isize
     });
     log::trace!("close({}) = {}", fd, result);
+    result
+}
+
+unsafe fn syscall_dup(fd: usize) -> isize {
+    let result = hal::edge::with_edge_caller(|caller| {
+        caller
+            .write_header(&EdgeCallReq::SyscallDup {
+                pid: hal::task::current_pid(),
+                src_fd: fd as i32,
+                dest_fd: None,
+            })
+            .unwrap();
+        caller.kick().unwrap();
+
+        caller.read_header().unwrap().into_syscall_resp().unwrap() as isize
+    });
+    log::trace!("dup({}) = {}", fd, result);
+    result
+}
+
+unsafe fn syscall_dup3(src_fd: usize, dest_fd: usize, flags: usize) -> isize {
+    if src_fd == dest_fd {
+        log::error!("dup3: src_fd and dest_fd are the same");
+        return Errno::EINVAL.as_neg_isize();
+    }
+    if flags != 0 {
+        log::error!("dup3: Unsupported flags: {}", flags);
+        return Errno::EINVAL.as_neg_isize();
+    }
+
+    let result = hal::edge::with_edge_caller(|caller| {
+        caller
+            .write_header(&EdgeCallReq::SyscallDup {
+                pid: hal::task::current_pid(),
+                src_fd: src_fd as i32,
+                dest_fd: Some(dest_fd as i32),
+            })
+            .unwrap();
+        caller.kick().unwrap();
+
+        caller.read_header().unwrap().into_syscall_resp().unwrap() as isize
+    });
+    log::trace!("dup2({}, {}) = {}", src_fd, dest_fd, result);
     result
 }

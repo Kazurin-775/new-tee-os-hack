@@ -9,6 +9,8 @@ use super::{listing::*, SyscallHandler};
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/asm-generic/unistd.h
 pub static TABLE_GENERIC: Map<u32, SyscallHandler> = phf_map! {
     17u32 => SYSCALL_GETCWD,
+    23u32 => SYSCALL_DUP,
+    24u32 => SYSCALL_DUP3,
     34u32 => SYSCALL_MKDIRAT,
     49u32 => SYSCALL_CHDIR,
     56u32 => SYSCALL_OPENAT,
@@ -23,9 +25,11 @@ pub static TABLE_X86_64: Map<u32, SyscallHandler> = phf_map! {
     0u32 => SYSCALL_READ,
     1u32 => SYSCALL_WRITE,
     3u32 => SYSCALL_CLOSE,
+    32u32 => SYSCALL_DUP,
     60u32 => SYSCALL_EXIT,
     79u32 => SYSCALL_GETCWD,
     80u32 => SYSCALL_CHDIR,
     257u32 => SYSCALL_OPENAT,
     258u32 => SYSCALL_MKDIRAT,
+    292u32 => SYSCALL_DUP3,
 };

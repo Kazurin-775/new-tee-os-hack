@@ -36,6 +36,11 @@ pub enum EdgeCallReq {
         pid: i32,
         fd: i32,
     },
+    SyscallDup {
+        pid: i32,
+        src_fd: i32,
+        dest_fd: Option<i32>,
+    },
     SyscallMkdirAt {
         pid: i32,
         fd: i32,

@@ -103,6 +103,23 @@ pub fn close(_stream: &mut dyn EdgeStream, pid: i32, fd: i32) -> SyscallResult<i
         .map_err(Into::into)
 }
 
+pub fn dup(
+    _stream: &mut dyn EdgeStream,
+    pid: i32,
+    src_fd: i32,
+    dest_fd: Option<i32>,
+) -> SyscallResult<isize> {
+    TASKS
+        .lock()
+        .unwrap()
+        .get_mut(&pid)
+        .ok_or(anyhow::anyhow!("no such process"))?
+        .fs
+        .dup(src_fd, dest_fd)
+        .map(|fd| fd as isize)
+        .map_err(Into::into)
+}
+
 pub fn mkdirat(
     _stream: &mut dyn EdgeStream,
     pid: i32,

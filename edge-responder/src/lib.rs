@@ -53,6 +53,14 @@ pub fn handle_edge_call_req(
             let result = syscall_imp::close(stream, pid, fd);
             write_syscall_result(stream, result).context("write result")?;
         }
+        SyscallDup {
+            pid,
+            src_fd,
+            dest_fd,
+        } => {
+            let result = syscall_imp::dup(stream, pid, src_fd, dest_fd);
+            write_syscall_result(stream, result).context("write result")?;
+        }
         SyscallMkdirAt {
             pid,
             fd,
