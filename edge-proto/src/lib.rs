@@ -59,6 +59,10 @@ pub enum EdgeCallReq {
         fd: i32,
         len: u64,
     },
+    SyscallFstat {
+        pid: i32,
+        fd: i32,
+    },
     FileOpen {
         path: String,
     },

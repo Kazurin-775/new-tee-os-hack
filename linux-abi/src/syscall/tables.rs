@@ -18,6 +18,7 @@ pub static TABLE_GENERIC: Map<u32, SyscallHandler> = phf_map! {
     61u32 => SYSCALL_GETDENTS64,
     63u32 => SYSCALL_READ,
     64u32 => SYSCALL_WRITE,
+    80u32 => SYSCALL_FSTAT,
     93u32 => SYSCALL_EXIT,
 };
 
@@ -26,6 +27,7 @@ pub static TABLE_X86_64: Map<u32, SyscallHandler> = phf_map! {
     0u32 => SYSCALL_READ,
     1u32 => SYSCALL_WRITE,
     3u32 => SYSCALL_CLOSE,
+    5u32 => SYSCALL_FSTAT,
     32u32 => SYSCALL_DUP,
     60u32 => SYSCALL_EXIT,
     79u32 => SYSCALL_GETCWD,

@@ -11,6 +11,7 @@ pub const SYSCALL_WRITE: SyscallHandler = SyscallHandler::Syscall3(syscall_write
 pub const SYSCALL_CLOSE: SyscallHandler = SyscallHandler::Syscall1(syscall_close);
 pub const SYSCALL_DUP: SyscallHandler = SyscallHandler::Syscall1(syscall_dup);
 pub const SYSCALL_DUP3: SyscallHandler = SyscallHandler::Syscall3(syscall_dup3);
+pub const SYSCALL_FSTAT: SyscallHandler = SyscallHandler::Syscall2(syscall_fstat);
 
 unsafe fn edge_read(fd: usize, buf: &mut [u8]) -> isize {
     hal::edge::with_edge_caller(|caller| {
@@ -176,5 +177,25 @@ unsafe fn syscall_dup3(src_fd: usize, dest_fd: usize, flags: usize) -> isize {
         caller.read_header().unwrap().into_syscall_resp().unwrap() as isize
     });
     log::trace!("dup2({}, {}) = {}", src_fd, dest_fd, result);
+    result
+}
+
+unsafe fn syscall_fstat(fd: usize, stat: usize) -> isize {
+    let result = hal::edge::with_edge_caller(|caller| {
+        caller
+            .write_header(&EdgeCallReq::SyscallFstat {
+                pid: hal::task::current_pid(),
+                fd: fd as i32,
+            })
+            .unwrap();
+        caller.kick().unwrap();
+
+        let result = caller.read_header().unwrap().into_syscall_resp().unwrap() as isize;
+        if result >= 0 {
+            hal::mem::copy_to_user(&caller.read_data().unwrap()[0..128], stat as *mut u8);
+        }
+        result
+    });
+    log::trace!("fstat({}, _) = {}", fd, result);
     result
 }

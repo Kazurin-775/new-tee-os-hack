@@ -204,3 +204,32 @@ pub fn special_getdents64(
 
     Ok(())
 }
+
+pub fn special_fstat(stream: &mut dyn EdgeStream, pid: i32, fd: i32) -> anyhow::Result<()> {
+    // TODO: support archs with different struct sizes
+    assert_eq!(std::mem::size_of::<nix::libc::stat>(), 128);
+
+    let local_dir = Arc::clone(
+        TASKS
+            .lock()
+            .unwrap()
+            .get(&pid)
+            .ok_or(anyhow::anyhow!("no such process"))?
+            .fs
+            .find_fd(fd as i32)?,
+    );
+    let guard = local_dir.lock().unwrap();
+
+    let mut buf = [0; 128];
+    let result = unsafe { nix::libc::fstat(guard.as_raw_fd(), buf.as_mut_ptr().cast()) };
+
+    stream
+        .write_header(&EdgeCallResp::SyscallResp(result as i64))
+        .compat()
+        .context("write header")?;
+    if result >= 0 {
+        stream.write_data(&buf).compat().context("write data")?;
+    }
+
+    Ok(())
+}

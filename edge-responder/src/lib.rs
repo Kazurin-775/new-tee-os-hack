@@ -80,6 +80,9 @@ pub fn handle_edge_call_req(
         SyscallGetDents64 { pid, fd, len } => {
             syscall_imp::special_getdents64(stream, pid, fd, len)?;
         }
+        SyscallFstat { pid, fd } => {
+            syscall_imp::special_fstat(stream, pid, fd)?;
+        }
         FileOpen { path } => {
             write_anyhow_result(
                 stream,
