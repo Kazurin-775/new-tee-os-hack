@@ -36,20 +36,6 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
     // Log system
     klog::klog_init().expect("failed to initialize klog module");
 
-    //demo of ocall
-    // let info="hello world";
-    // let mut ptr=info.as_ptr() as usize;
-
-    // match syscall::fs::SYSCALL_WRITE {
-    //     syscall::SyscallHandler::Syscall3(f)=>{f(0,ptr,11);},
-    //     _=>panic!("Not a write syscall!"),
-    // }
-
-    //demo of elf
-    // let elf = elfloader::elfloader::ElfFile::load(&elf_data);
-    // let entry = elf.entry() as usize;
-    // let sp=elfloader::elfloader::ElfFile::prepare_libc_args();
-
     log::debug!("SGX TEE OS is running!");
     log::debug!(
         "HeapAddr: {:#X}, HeapSize: {:#X}, UtmAddr: {:#X}, UtmSize: {:#X}",
