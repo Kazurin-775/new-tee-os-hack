@@ -113,6 +113,37 @@ impl ElfFile {
         }
     }
 
+    pub fn load_allocated<R: ElfReader>(
+        &self,
+        file: &mut R,
+        mut alloc: impl FnMut(*mut u8, usize) -> *mut u8,
+    ) {
+        for seg in self.elf.program_headers.iter() {
+            if seg.p_type == program_header::PT_LOAD {
+                // compute the virtual address where `mem` will be placed
+                let load_addr = (seg.p_vaddr as usize) / PAGE_SIZE * PAGE_SIZE;
+                let virt_off_begin = (seg.p_vaddr as usize) - load_addr;
+                let virt_off_end = virt_off_begin + (seg.p_filesz as usize); // MUST USE `p_filesz` as the size!
+                let file_begin = seg.p_offset;
+                // let file_end = file_begin + (seg.p_filesz as usize);
+
+                // allocate memory at the location specified in the ELF file
+                let mem = unsafe {
+                    let mem_ptr = load_addr as *mut u8;
+                    let size = get_pages(seg.p_memsz) * PAGE_SIZE;
+                    // alloc() may place the memory at a different location
+                    let mem_ptr = alloc(mem_ptr, size);
+
+                    core::slice::from_raw_parts_mut(mem_ptr, size)
+                };
+
+                // read data from the ELF file
+                file.seek(file_begin);
+                file.read(&mut mem[virt_off_begin..virt_off_end]);
+            }
+        }
+    }
+
     #[inline]
     pub fn entry(&self) -> u64 {
         self.elf.header.e_entry
