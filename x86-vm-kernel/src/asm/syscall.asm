@@ -21,9 +21,16 @@ syscall_entry:
     mov     rcx, rax
     mov     r8, r10
 
+    # align `rsp` to 16 bytes boundary to avoid potential errors
+    # For the reason of this, see `sgx-libos/src/asm/syscall.asm`.
+    sub     rsp, 8
+
     # jump to Rust code
     call    handle_syscall
     # the return value is stored in rax
+
+    # restore rsp's value before alignment
+    add     rsp, 8
 
     # restore registers
     pop     r11
