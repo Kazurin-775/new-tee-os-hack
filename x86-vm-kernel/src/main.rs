@@ -19,8 +19,12 @@ use x86_64::instructions::hlt;
 entry_point!(start_kernel);
 
 fn clear_screen(boot_info: &mut BootInfo) {
-    let vga_buffer = boot_info.framebuffer.as_mut().unwrap().buffer_mut();
-    vga_buffer.fill(0);
+    if let Some(fb) = boot_info.framebuffer.as_mut() {
+        log::debug!("Clearing VGA buffer");
+        fb.buffer_mut().fill(0);
+    } else {
+        log::debug!("VGA buffer is not mapped");
+    }
 }
 
 fn start_kernel(boot_info: &'static mut BootInfo) -> ! {

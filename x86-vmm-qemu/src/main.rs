@@ -64,6 +64,11 @@ fn main() -> anyhow::Result<()> {
     log::info!("Starting QEMU");
     let mut run_cmd = Command::new("qemu-system-x86_64");
     run_cmd.args([
+        // headless mode
+        // "640x480@32: Is this OK? (s)ave/(y)es/(n)o" is printed by the bootloader
+        // and cannot be answered or disabled.
+        // https://github.com/rust-osdev/bootloader/blob/v0.10.12/src/asm/vesa.s
+        "-nographic",
         // attach boot drive
         "-drive",
         &format!("format=raw,file={}", disk_img.display()),
