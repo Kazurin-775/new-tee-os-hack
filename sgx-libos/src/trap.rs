@@ -1,14 +1,8 @@
 use sgx_trts::veh::*;
-use sgx_types::{int32_t, sgx_exception_info_t};
 
 pub fn trap_handler_init() {
-    match rsgx_register_exception_handler(0, handle_syscall) {
+    match rsgx_register_exception_handler(0, crate::syscall::handle_syscall_exception) {
         Some(_e) => (),
-        _ => panic!("fail to register syscall"),
+        _ => panic!("failed to register syscall handler"),
     }
-}
-
-#[no_mangle]
-extern "C" fn handle_syscall(_frame: *mut sgx_exception_info_t) -> int32_t {
-    unimplemented!()
 }

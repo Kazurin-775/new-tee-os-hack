@@ -6,11 +6,11 @@ use sgx_types::sgx_status_t;
 
 extern crate alloc;
 
-// pub mod syscall;
 mod elf;
 mod heap;
 mod klog;
 mod panic;
+mod syscall;
 mod trap;
 
 pub use panic::panic_handler;
@@ -82,6 +82,11 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
         assert_eq!(result_addr as usize, placement);
         result_addr
     });
+
+    // Call ELF's main() with the address of the syscall handler
+    let elf_main: extern "C" fn(unsafe extern "C" fn()) =
+        unsafe { core::mem::transmute(elf_file.entry() as usize + rsrv_base as usize) };
+    elf_main(syscall::syscall_entry);
 
     sgx_status_t::SGX_SUCCESS
 }
