@@ -4,6 +4,7 @@
   <ISVSVN>0</ISVSVN>
   <StackMaxSize>0x40000</StackMaxSize>
   <HeapMaxSize>0x100000</HeapMaxSize>
+  <ReservedMemMaxSize>0x100000</ReservedMemMaxSize>
   <TCSNum>1</TCSNum>
   <TCSPolicy>1</TCSPolicy>
   <DisableDebug>0</DisableDebug>

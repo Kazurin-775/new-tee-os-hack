@@ -5,6 +5,7 @@ authors = ["zjuliangxun <m13009809900@163.com>"]
 edition = "2021"
 
 [dependencies]
+elf-loader = { path = "../elf-loader" }
 hal = { path = "../hal", features = ["sgx"] }
 kconfig = { path = "../kconfig", features = ["sgx"] }
 log = "0.4.16"

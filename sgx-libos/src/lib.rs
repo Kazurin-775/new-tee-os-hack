@@ -1,12 +1,13 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 
-use alloc::vec;
+use hal::edge::EdgeFile;
 use sgx_types::sgx_status_t;
 
 extern crate alloc;
 
 // pub mod syscall;
+mod elf;
 mod heap;
 mod klog;
 mod panic;
@@ -58,8 +59,29 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
         utm_size,
     );
 
-    let alloc_test = vec![1, 2, 3];
-    drop(alloc_test);
+    let (rsrv_base, _rsrv_size) = heap::query_rsrv_mem();
+    assert!(!rsrv_base.is_null());
+
+    // Load sgx-init as an ELF file
+    let mut edge_file = elf::EdgeElfFile(EdgeFile::open("sgx-init"));
+    let elf_file = elf_loader::ElfFile::new(&mut edge_file, elf_loader::arch::X86_64);
+    elf_file.load_allocated(&mut edge_file, |ptr, size| {
+        let placement = ptr as usize + rsrv_base as usize;
+        log::debug!(
+            "ELF loader: mapping ({:?} + {:#X}) -> {:#X}",
+            ptr,
+            size,
+            placement,
+        );
+        let result_addr = unsafe {
+            sgx_alloc::rsrvmem::alloc_with_addr(
+                placement as *mut u8,
+                u32::try_from(size / kconfig::PAGE_SIZE).unwrap(),
+            )
+        };
+        assert_eq!(result_addr as usize, placement);
+        result_addr
+    });
 
     sgx_status_t::SGX_SUCCESS
 }

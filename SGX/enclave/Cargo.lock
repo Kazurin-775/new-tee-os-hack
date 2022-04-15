@@ -100,6 +100,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "elf-loader"
+version = "0.1.0"
+dependencies = [
+ "goblin",
+]
+
+[[package]]
 name = "embedded-hal"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -119,6 +126,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "goblin"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c955ab4e0ad8c843ea653a3d143048b87490d9be56bd7132a435c2407846ac8f"
+dependencies = [
+ "log",
+ "plain",
+ "scroll",
 ]
 
 [[package]]
@@ -246,6 +264,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "plain"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
 name = "postcard"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -334,6 +358,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
+name = "scroll"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04c565b551bafbef4157586fa379538366e4385d42082f255bfd96e4fe8519da"
+dependencies = [
+ "scroll_derive",
+]
+
+[[package]]
+name = "scroll_derive"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdbda6ac5cd1321e724fa9cee216f3a61885889b896f073b8f82322789c5250e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "semver"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -372,6 +416,7 @@ dependencies = [
 name = "sgx-libos"
 version = "0.1.0"
 dependencies = [
+ "elf-loader",
  "hal",
  "kconfig",
  "log",
