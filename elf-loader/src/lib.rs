@@ -21,9 +21,9 @@ impl ElfReader for std::fs::File {
 
 #[test]
 fn test1() {
-    elf_loader::ElfFile::load(
-        &mut std::fs::File::open("./riscv-hello-world").unwrap(),
-        arch::RiscV,
-        |from, size, to| println!("({:?} + {:#X}) -> {:#X}", from, size, to),
-    );
+    let mut file = std::fs::File::open("./riscv-hello-world").unwrap();
+    let elf = elf_loader::ElfFile::new(&mut file, arch::RiscV);
+    elf.load_mapped(&mut file, |from, size, to| {
+        println!("({:?} + {:#X}) -> {:#X}", from, size, to)
+    });
 }

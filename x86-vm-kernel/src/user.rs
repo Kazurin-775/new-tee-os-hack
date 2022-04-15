@@ -25,37 +25,32 @@ pub fn enter_user_mode() {
     let entry_point;
     {
         let mut edge_file = EdgeElfFile(EdgeFile::open("x86-vm-init"));
-        let elf_file = elf_loader::ElfFile::load(
-            &mut edge_file,
-            elf_loader::arch::X86_64,
-            |from, size, to| unsafe {
-                log::debug!(
-                    "ELF loader: mapping ({:?} + {:#X}) -> {:#X}",
-                    from,
-                    size,
-                    to,
-                );
-                let from = from as usize;
-                for i in 0..(size + 0xFFF) >> 12 {
-                    rpt.map_to(
-                        Page::<Size4KiB>::from_start_address(VirtAddr::new(
-                            (to + (i << 12)) as u64,
-                        ))
+        let elf_file = elf_loader::ElfFile::new(&mut edge_file, elf_loader::arch::X86_64);
+        elf_file.load_mapped(&mut edge_file, |from, size, to| unsafe {
+            log::debug!(
+                "ELF loader: mapping ({:?} + {:#X}) -> {:#X}",
+                from,
+                size,
+                to,
+            );
+            let from = from as usize;
+            for i in 0..(size + 0xFFF) >> 12 {
+                rpt.map_to(
+                    Page::<Size4KiB>::from_start_address(VirtAddr::new((to + (i << 12)) as u64))
                         .unwrap(),
-                        PhysFrame::from_start_address(PhysAddr::new(
-                            (from + (i << 12)) as u64 - MIRROR_BASE_VIRT.as_u64(),
-                        ))
-                        .unwrap(),
-                        PageTableFlags::PRESENT
-                            | PageTableFlags::WRITABLE
-                            | PageTableFlags::USER_ACCESSIBLE,
-                        &mut frame_allocator,
-                    )
-                    .unwrap()
-                    .flush();
-                }
-            },
-        );
+                    PhysFrame::from_start_address(PhysAddr::new(
+                        (from + (i << 12)) as u64 - MIRROR_BASE_VIRT.as_u64(),
+                    ))
+                    .unwrap(),
+                    PageTableFlags::PRESENT
+                        | PageTableFlags::WRITABLE
+                        | PageTableFlags::USER_ACCESSIBLE,
+                    &mut frame_allocator,
+                )
+                .unwrap()
+                .flush();
+            }
+        });
         entry_point = elf_file.entry();
         edge_file.0.close();
     }

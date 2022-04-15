@@ -43,7 +43,7 @@ where
 }
 
 pub struct ElfFile {
-    entry: u64,
+    elf: Elf<'static>,
 }
 
 pub trait ElfReader {
@@ -52,11 +52,7 @@ pub trait ElfReader {
 }
 
 impl ElfFile {
-    pub fn load<R: ElfReader, A: ElfArch>(
-        file: &mut R,
-        _arch: A,
-        mut mapper: impl MapperFn,
-    ) -> ElfFile {
+    pub fn new<R: ElfReader, A: ElfArch>(file: &mut R, _arch: A) -> ElfFile {
         // read ELF header
         let mut header = [0; core::mem::size_of::<Header>()];
         assert_eq!(file.read(&mut header), header.len());
@@ -82,7 +78,11 @@ impl ElfFile {
             ProgramHeader::parse(&program_headers, 0, header.e_phnum as usize, ctx)
                 .expect("failed to parse program headers");
 
-        for seg in elf.program_headers.iter() {
+        ElfFile { elf }
+    }
+
+    pub fn load_mapped<R: ElfReader>(&self, file: &mut R, mut mapper: impl MapperFn) {
+        for seg in self.elf.program_headers.iter() {
             if seg.p_type == program_header::PT_LOAD {
                 // allocate memory using `alloc` API
                 let mem = unsafe {
@@ -111,14 +111,10 @@ impl ElfFile {
                 );
             }
         }
-
-        ElfFile {
-            entry: elf.header.e_entry,
-        }
     }
 
     #[inline]
     pub fn entry(&self) -> u64 {
-        self.entry
+        self.elf.header.e_entry
     }
 }
