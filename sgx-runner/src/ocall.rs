@@ -10,3 +10,10 @@ unsafe extern "C" fn ocall_edge_kick() {
         std::process::exit(1);
     }
 }
+
+#[no_mangle]
+unsafe extern "C" fn ocall_exit(retval: i32) {
+    log::info!("Enclave exited with status {}", retval);
+    // TODO: perform cleanups
+    std::process::exit(retval);
+}
