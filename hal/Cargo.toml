@@ -29,7 +29,6 @@ riscv = { git = "https://github.com/rust-embedded/riscv.git", rev = "cd31989", f
 riscv-sv39 = { path = "../riscv-sv39", optional = true }
 
 # x86 VM related things
-async-trait = { version = "0.1.53", optional = true }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"], optional = true }
 postcard = { version = "0.7.3", features = ["alloc"], optional = true }
 uart_16550 = { version = "0.2.17", optional = true }
