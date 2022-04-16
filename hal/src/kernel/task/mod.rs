@@ -148,26 +148,29 @@ impl Future for IdleTask {
     }
 }
 
-pub fn current() -> ManuallyDrop<Weak<Mutex<Task>>> {
+pub fn current() -> Arc<Mutex<Task>> {
     let pcb_weak_ptr = current_pcb_weak();
     assert_ne!(pcb_weak_ptr, 0);
     // Use a `ManuallyDrop` to ensure that the weak ref count is not changed.
     // It is UB to directly take the `Weak` out of `ManuallyDrop`.
     // Note that `Weak::upgrade` does not consume the `Weak` pointer.
-    ManuallyDrop::new(unsafe { Weak::from_raw(pcb_weak_ptr as *mut Mutex<Task>) })
+    let weak = ManuallyDrop::new(unsafe { Weak::from_raw(pcb_weak_ptr as *mut Mutex<Task>) });
+    // TODO: most use cases of `current()` requires a strong reference. Can we
+    // minimize the cost here?
+    weak.upgrade().expect("the PCB has been dropped")
 }
 
 pub fn current_pid() -> Pid {
-    current().upgrade().unwrap().lock().pid
+    current().lock().pid
 }
 
 /// Print debug message about the current task.
 pub fn dbg_current() {
     let current = current();
-    log::trace!("current = {:?}", Weak::as_ptr(&current));
+    log::trace!("current = {:?}", Arc::as_ptr(&current));
     log::trace!(
         "refcount = {} (+ {})",
-        current.strong_count(),
-        current.weak_count(),
+        Arc::strong_count(&current),
+        Arc::weak_count(&current),
     );
 }
