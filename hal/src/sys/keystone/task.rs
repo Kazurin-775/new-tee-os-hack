@@ -1,16 +1,16 @@
 #[repr(C)]
 #[derive(Default)]
-pub struct UserCtx {
+pub struct KtaskTls {
     user_sp: usize,
     kernel_sp: usize,
     // used by assembly code, should not be touched by Rust code
-    prev_kctx: usize,
-    cur_kctx: usize,
+    prev_ktask_ctx: usize,
+    cur_ktask_ctx: usize,
 }
 
 #[repr(C)]
 #[derive(Default)]
-pub struct KernelCtx {
+pub struct KtaskCtx {
     sp: usize,
     ra: usize,
     tp: usize,
@@ -33,23 +33,23 @@ const KERNEL_STACK_LAYOUT: alloc::alloc::Layout = unsafe {
     alloc::alloc::Layout::from_size_align_unchecked(KERNEL_STACK_SIZE, kconfig::PAGE_SIZE)
 };
 
-impl UserCtx {
-    pub fn from_user_sp(user_sp: usize) -> UserCtx {
-        UserCtx {
+impl KtaskTls {
+    pub fn from_user_sp(user_sp: usize) -> KtaskTls {
+        KtaskTls {
             user_sp,
             ..Default::default()
         }
     }
 }
 
-impl KernelCtx {
-    pub fn allocate_for(thread_ctx: *const UserCtx) -> KernelCtx {
+impl KtaskCtx {
+    pub fn allocate_for(thread_ctx: *const KtaskTls) -> KtaskCtx {
         let kernel_stack = unsafe { alloc::alloc::alloc(KERNEL_STACK_LAYOUT) };
         assert!(!kernel_stack.is_null(), "failed to allocate kernel stack");
         let kernel_stack_end = unsafe { kernel_stack.add(KERNEL_STACK_SIZE) };
-        KernelCtx {
+        KtaskCtx {
             sp: kernel_stack_end as usize,
-            ra: task_entry as usize,
+            ra: ret_from_fork as usize,
             tp: thread_ctx as usize,
             ..Default::default()
         }
@@ -58,9 +58,9 @@ impl KernelCtx {
 
 // functions defined in task.S
 extern "C" {
-    pub fn ktask_enter(from: *mut KernelCtx, to: *mut KernelCtx);
+    pub fn ktask_enter(from: *mut KtaskCtx, to: *mut KtaskCtx);
     pub fn ktask_leave();
-    fn task_entry() -> !;
+    fn ret_from_fork() -> !;
 }
 
 pub fn ensure_ktask_context() {

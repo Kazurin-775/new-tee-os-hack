@@ -16,6 +16,10 @@ pub static PID_POOL: Mutex<PidPool> = Mutex::new(PidPool::new());
 pub struct Task {
     pub pid: Pid,
 
+    /// The kernel thread's TLS (thread local storage), used by the `current!`
+    /// macro and `ret_from_fork`. Only a kernel task has a TLS (the scheduler
+    /// does not).
+    ///
     /// Stores the kernel's `sp` and user's `sp`, and acts as a bridge between
     /// the user context and the kernel context.
     ///
@@ -23,28 +27,31 @@ pub struct Task {
     /// to fetch the kernel's stack pointer (`sp`) at the beginning of the ISR.
     /// Therefore, its address must be kept static during the kernel's lifetime.
     /// We use a `Box` to achieve this.
-    pub user_ctx: Box<UserCtx>,
+    pub tls: Box<KtaskTls>,
 
-    /// Stores the task's kernel context (just before `ktask_leave`).
+    /// The kernel task's context, used to switch between kernel tasks and the
+    /// scheduler.
+    ///
     /// The task's kernel sp and any callee-saved registers will be put here.
     ///
-    /// A `None` indicates a borrowed (vacant) state. When the scheduler switches
-    /// to this task, the scheduler takes the `KernelCtx` away (replacing it with
+    /// This field can be borrowed by [`TaskFuture::poll`]. A `None` indicates a
+    /// borrowed (vacant) state. When the scheduler switches to this task,
+    /// the scheduler takes the `KernelCtx` away (replacing it with
     /// `None`), and then returns it when the task yields back.
     /// This field should never be `None` at any other time.
-    pub kernel_ctx: Option<KernelCtx>,
+    pub ktask_ctx: Option<KtaskCtx>,
 }
 
 impl Task {
     pub fn create(user_sp: usize) -> Task {
         let pid = PID_POOL.try_lock().unwrap().alloc();
-        let user_ctx = Box::new(UserCtx::from_user_sp(user_sp));
+        let tls = Box::new(KtaskTls::from_user_sp(user_sp));
         // TODO: free kernel stack
-        let kernel_ctx = Some(KernelCtx::allocate_for(user_ctx.as_ref()));
+        let ktask_ctx = Some(KtaskCtx::allocate_for(tls.as_ref()));
         let task = Task {
             pid,
-            user_ctx,
-            kernel_ctx,
+            tls,
+            ktask_ctx,
         };
         task
     }
@@ -67,20 +74,31 @@ impl Future for TaskFuture {
         self: core::pin::Pin<&mut Self>,
         cx: &mut core::task::Context<'_>,
     ) -> core::task::Poll<Self::Output> {
-        // the scheduler's KernelCtx
-        let mut prev_ctx = MaybeUninit::uninit();
+        // The scheduler's `KtaskCtx` (write only).
+        let mut prev_ktask_ctx = MaybeUninit::uninit();
 
-        // borrow the Task's KernelCtx
-        let next_ctx = self.task.try_lock().unwrap().kernel_ctx.take();
-        let mut next_ctx = next_ctx.expect("kernel context is vacant");
+        // Borrow the Task's `KtaskCtx` to ensure exclusive access.
+        let mut next_ktask_ctx = self
+            .task
+            .try_lock()
+            .unwrap()
+            .ktask_ctx
+            .take()
+            .expect("ktask context is vacant");
 
-        // enter the Task!
+        // Enter the Task!
         unsafe {
-            ktask_enter(prev_ctx.as_mut_ptr(), &mut next_ctx);
+            ktask_enter(prev_ktask_ctx.as_mut_ptr(), &mut next_ktask_ctx);
         }
 
-        // return the Task's KernelCtx
-        self.task.try_lock().unwrap().kernel_ctx.replace(next_ctx);
+        // `next_ktask_ctx` is now modified, return it to the Task's `KtaskCtx`.
+        assert!(self
+            .task
+            .try_lock()
+            .unwrap()
+            .ktask_ctx
+            .replace(next_ktask_ctx)
+            .is_none());
 
         cx.waker().wake_by_ref();
         core::task::Poll::Pending
@@ -88,8 +106,10 @@ impl Future for TaskFuture {
 }
 
 pub fn yield_to_sched() {
+    // Ensure that the TLS is valid (i.e. we are actually inside a Task).
     ensure_ktask_context();
 
+    // Switch back to previous `KtaskCtx` stored in the TLS.
     unsafe {
         ktask_leave();
     }

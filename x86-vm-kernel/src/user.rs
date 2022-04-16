@@ -73,7 +73,7 @@ pub fn enter_user_mode() {
 
     // construct a task
     let mut task = Task::create(0);
-    task.kernel_ctx.as_mut().unwrap().rbx = entry_point as usize;
+    task.ktask_ctx.as_mut().unwrap().rbx = entry_point as usize;
     let task_future = TaskFuture::new(Arc::new(Mutex::new(task)));
 
     // enter user mode
@@ -82,7 +82,7 @@ pub fn enter_user_mode() {
 }
 
 #[no_mangle]
-unsafe extern "C" fn user_entry() -> ! {
+unsafe extern "C" fn ret_from_fork() -> ! {
     gdt::enter_user();
 
     core::arch::asm!(

@@ -17,7 +17,7 @@
     .text
     .global ktask_enter
     .global ktask_leave
-    .global task_entry
+    .global ret_from_fork
 
 ktask_enter:
     STORE   sp,   0
@@ -67,7 +67,7 @@ ktask_leave:
     # switch back to the scheduler
     j       ktask_enter
 
-task_entry:
+ret_from_fork:
     # switch kernel sp and user sp
     TPSTORE sp, 1
     TPLOAD  sp, 0

@@ -2,7 +2,7 @@ use x86_64::registers::model_specific as msr;
 
 #[repr(C)]
 #[derive(Default)]
-pub struct UserCtx {
+pub struct KtaskTls {
     /// The "foreign" stack pointer (i.e. user sp in kernel context, and
     /// kernel sp in user context).
     ///
@@ -16,7 +16,7 @@ pub struct UserCtx {
 
 #[repr(C)]
 #[derive(Default)]
-pub struct KernelCtx {
+pub struct KtaskCtx {
     pub rsp: usize,
     pub rbp: usize,
     pub rbx: usize,
@@ -30,23 +30,23 @@ pub struct KernelCtx {
 const KERNEL_STACK_LAYOUT: alloc::alloc::Layout =
     unsafe { alloc::alloc::Layout::from_size_align_unchecked(0x4000, 0x1000) };
 
-impl UserCtx {
-    pub fn from_user_sp(user_sp: usize) -> UserCtx {
-        UserCtx {
+impl KtaskTls {
+    pub fn from_user_sp(user_sp: usize) -> KtaskTls {
+        KtaskTls {
             foreign_sp: user_sp,
             ..Default::default()
         }
     }
 }
 
-impl KernelCtx {
-    pub fn allocate_for(thread_ctx: *const UserCtx) -> KernelCtx {
+impl KtaskCtx {
+    pub fn allocate_for(thread_ctx: *const KtaskTls) -> KtaskCtx {
         let stack = unsafe { alloc::alloc::alloc(KERNEL_STACK_LAYOUT) };
         // write the task's entry address at the bottom of the stack
         unsafe {
-            (stack.offset(0x3FF8) as *mut u64).write(user_entry as u64);
+            (stack.offset(0x3FF8) as *mut u64).write(ret_from_fork as u64);
         }
-        KernelCtx {
+        KtaskCtx {
             rsp: (stack as usize) + 0x3FF8,
             gs_offset: thread_ctx as usize,
             ..Default::default()
@@ -56,10 +56,10 @@ impl KernelCtx {
 
 extern "C" {
     // functions defined in `task.asm`
-    pub fn ktask_enter(from: *mut KernelCtx, to: *mut KernelCtx);
+    pub fn ktask_enter(from: *mut KtaskCtx, to: *mut KtaskCtx);
     pub fn ktask_leave();
     // functions defined in `x86-vm-kernel`
-    fn user_entry() -> !;
+    fn ret_from_fork() -> !;
 }
 
 core::arch::global_asm!(include_str!("task.asm"));
