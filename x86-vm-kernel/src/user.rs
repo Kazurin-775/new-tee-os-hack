@@ -70,6 +70,8 @@ pub fn enter_user_mode() {
     }
 
     // construct a task
+    // Currently the `user_sp` is not initialized here, but rather in `ret_from_fork`.
+    // This should be a bug (it prevents `fork` from being implemented properly).
     let task = Task::create(0);
     // Hack: write the entry point to rbx (used by `ret_from_fork`)
     task.lock().ktask_ctx.as_mut().unwrap().rbx = entry_point as usize;
