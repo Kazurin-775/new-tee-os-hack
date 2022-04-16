@@ -12,6 +12,9 @@ pub struct KtaskTls {
     // used by assembly code, should not be touched by Rust code
     prev_kctx: usize,
     cur_kctx: usize,
+
+    // the following fields are used by Rust code
+    pub pcb_weak_ptr: usize,
 }
 
 #[repr(C)]
@@ -36,6 +39,10 @@ impl KtaskTls {
             foreign_sp: user_sp,
             ..Default::default()
         }
+    }
+
+    pub fn set_pcb_weak_ptr(&mut self, new: usize) {
+        self.pcb_weak_ptr = new;
     }
 }
 
@@ -64,9 +71,13 @@ extern "C" {
 
 core::arch::global_asm!(include_str!("task.asm"));
 
-pub fn ensure_ktask_context() {
+pub fn current_pcb_weak() -> usize {
     // IA32_KERNEL_GS_BASE must be 0 in a kernel context
     assert_eq!(msr::KernelGsBase::read().as_u64(), 0);
     // the opposite for IA32_GS_BASE
-    assert_ne!(msr::GsBase::read().as_u64(), 0);
+    let tls = msr::GsBase::read().as_u64();
+    assert_ne!(tls, 0);
+
+    let tls = tls as *const KtaskTls;
+    unsafe { (*tls).pcb_weak_ptr }
 }

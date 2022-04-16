@@ -1,10 +1,8 @@
-use alloc::sync::Arc;
 use hal::{
     arch::x86_vm::gdt,
     edge::EdgeFile,
     task::{Task, TaskFuture},
 };
-use spin::Mutex;
 use x86_64::{
     structures::paging::{
         FrameAllocator, Mapper, OffsetPageTable, Page, PageTableFlags, PhysFrame, Size4KiB,
@@ -72,9 +70,10 @@ pub fn enter_user_mode() {
     }
 
     // construct a task
-    let mut task = Task::create(0);
-    task.ktask_ctx.as_mut().unwrap().rbx = entry_point as usize;
-    let task_future = TaskFuture::new(Arc::new(Mutex::new(task)));
+    let task = Task::create(0);
+    // Hack: write the entry point to rbx (used by `ret_from_fork`)
+    task.lock().ktask_ctx.as_mut().unwrap().rbx = entry_point as usize;
+    let task_future = TaskFuture::new(task);
 
     // enter user mode
     executor::spawn(task_future);

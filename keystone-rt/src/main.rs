@@ -4,12 +4,10 @@
 
 extern crate alloc;
 
-use alloc::sync::Arc;
 use hal::edge::EdgeFile;
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
 use log::debug;
 use riscv_sv39::{PageTableEntry, VirtAddr};
-use spin::Mutex;
 
 mod elf;
 mod entry;
@@ -86,8 +84,7 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
 
     log::debug!("Run keystone-init as init process");
     let task = hal::task::Task::create(user_sp);
-    let task_global = Arc::new(Mutex::new(task));
-    let task_future = hal::task::TaskFuture::new(task_global.clone());
+    let task_future = hal::task::TaskFuture::new(task);
 
     // execute U-mode program
     unsafe {

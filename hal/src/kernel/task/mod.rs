@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
-use alloc::sync::Arc;
+use alloc::sync::{Arc, Weak};
 use core::future::Future;
-use core::mem::MaybeUninit;
+use core::mem::{ManuallyDrop, MaybeUninit};
 use spin::Mutex;
 
 mod pid_pool;
@@ -43,7 +43,7 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn create(user_sp: usize) -> Task {
+    pub fn create(user_sp: usize) -> Arc<Mutex<Task>> {
         let pid = PID_POOL.try_lock().unwrap().alloc();
         let tls = Box::new(KtaskTls::from_user_sp(user_sp));
         // TODO: free kernel stack
@@ -53,6 +53,11 @@ impl Task {
             tls,
             ktask_ctx,
         };
+
+        // Initialize `current` pointer
+        let task = Arc::new(Mutex::new(task));
+        let pcb_weak_ptr = Arc::downgrade(&task).into_raw();
+        task.lock().tls.set_pcb_weak_ptr(pcb_weak_ptr as usize);
         task
     }
 }
@@ -107,7 +112,7 @@ impl Future for TaskFuture {
 
 pub fn yield_to_sched() {
     // Ensure that the TLS is valid (i.e. we are actually inside a Task).
-    ensure_ktask_context();
+    assert_ne!(current_pcb_weak(), 0);
 
     // Switch back to previous `KtaskCtx` stored in the TLS.
     unsafe {
@@ -131,7 +136,26 @@ impl Future for IdleTask {
     }
 }
 
+pub fn current() -> ManuallyDrop<Weak<Mutex<Task>>> {
+    let pcb_weak_ptr = current_pcb_weak();
+    assert_ne!(pcb_weak_ptr, 0);
+    // Use a `ManuallyDrop` to ensure that the weak ref count is not changed.
+    // It is UB to directly take the `Weak` out of `ManuallyDrop`.
+    // Note that `Weak::upgrade` does not consume the `Weak` pointer.
+    ManuallyDrop::new(unsafe { Weak::from_raw(pcb_weak_ptr as *mut Mutex<Task>) })
+}
+
 pub fn current_pid() -> Pid {
-    // TODO: support multitasking
-    1
+    current().upgrade().unwrap().lock().pid
+}
+
+/// Print debug message about the current task.
+pub fn dbg_current() {
+    let current = current();
+    log::trace!("current = {:?}", Weak::as_ptr(&current));
+    log::trace!(
+        "refcount = {} (+ {})",
+        current.strong_count(),
+        current.weak_count(),
+    );
 }
