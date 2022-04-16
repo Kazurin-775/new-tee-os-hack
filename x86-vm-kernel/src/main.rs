@@ -14,7 +14,6 @@ mod syscall;
 mod user;
 
 use bootloader::{entry_point, BootInfo};
-use x86_64::instructions::hlt;
 
 entry_point!(start_kernel);
 
@@ -46,7 +45,7 @@ fn start_kernel(boot_info: &'static mut BootInfo) -> ! {
 
     user::enter_user_mode();
 
-    loop {
-        hlt();
-    }
+    log::debug!("All kernel tasks have exited");
+    hal::exit_enclave(0);
+    unreachable!()
 }

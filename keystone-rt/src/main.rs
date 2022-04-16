@@ -93,5 +93,8 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
     }
     executor::spawn(task_future);
     executor::run_until_idle();
+
+    log::debug!("All kernel tasks have exited");
+    hal::exit_enclave(0);
     unreachable!()
 }

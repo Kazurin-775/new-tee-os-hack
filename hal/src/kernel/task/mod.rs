@@ -1,7 +1,13 @@
-use alloc::boxed::Box;
-use alloc::sync::{Arc, Weak};
-use core::future::Future;
-use core::mem::{ManuallyDrop, MaybeUninit};
+use alloc::{
+    boxed::Box,
+    sync::{Arc, Weak},
+};
+use core::{
+    future::Future,
+    mem::{ManuallyDrop, MaybeUninit},
+    pin::Pin,
+    task::{Context, Poll},
+};
 use spin::Mutex;
 
 mod pid_pool;
@@ -15,6 +21,7 @@ pub static PID_POOL: Mutex<PidPool> = Mutex::new(PidPool::new());
 
 pub struct Task {
     pub pid: Pid,
+    pub exited: bool,
 
     /// The kernel thread's TLS (thread local storage), used by the `current!`
     /// macro and `ret_from_fork`. Only a kernel task has a TLS (the scheduler
@@ -50,6 +57,7 @@ impl Task {
         let ktask_ctx = Some(KtaskCtx::allocate_for(tls.as_ref()));
         let task = Task {
             pid,
+            exited: false,
             tls,
             ktask_ctx,
         };
@@ -75,10 +83,7 @@ impl TaskFuture {
 impl Future for TaskFuture {
     type Output = ();
 
-    fn poll(
-        self: core::pin::Pin<&mut Self>,
-        cx: &mut core::task::Context<'_>,
-    ) -> core::task::Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         // The scheduler's `KtaskCtx` (write only).
         let mut prev_ktask_ctx = MaybeUninit::uninit();
 
@@ -105,8 +110,15 @@ impl Future for TaskFuture {
             .replace(next_ktask_ctx)
             .is_none());
 
-        cx.waker().wake_by_ref();
-        core::task::Poll::Pending
+        if self.task.lock().exited {
+            // Terminate the current async task.
+            Poll::Ready(())
+        } else {
+            // The task is still in ready state, push it back to the
+            // scheduler's queue.
+            cx.waker().wake_by_ref();
+            Poll::Pending
+        }
     }
 }
 
