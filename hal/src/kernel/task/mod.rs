@@ -65,6 +65,7 @@ impl Task {
         // Initialize `current` pointer
         let task = Arc::new(Mutex::new(task));
         let pcb_weak_ptr = Arc::downgrade(&task).into_raw();
+        // TODO: free `pcb_weak_ptr`, otherwise the `Task` won't be deallocated
         task.lock().tls.set_pcb_weak_ptr(pcb_weak_ptr as usize);
         task
     }
