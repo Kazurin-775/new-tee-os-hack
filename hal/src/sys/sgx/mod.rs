@@ -1,5 +1,6 @@
 pub mod edge;
 pub mod mem;
+pub mod task;
 
 pub fn exit_enclave(retval: usize) {
     extern "C" {

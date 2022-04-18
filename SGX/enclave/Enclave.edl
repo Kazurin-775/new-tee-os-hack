@@ -11,5 +11,6 @@ enclave {
         int64_t ocall_syscall_write(int fd, [user_check] const char *buf, size_t count);
         void ocall_edge_kick();
         void ocall_exit(int retval);
+        size_t ocall_switch_gs_base(size_t gs_base);
     };
 };

@@ -69,10 +69,25 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
         result_addr
     });
 
-    // Call ELF's main() with the address of the syscall handler
-    let elf_main: extern "C" fn(unsafe extern "C" fn()) =
-        unsafe { core::mem::transmute(elf_file.entry() as usize + rsrv_base as usize) };
-    elf_main(syscall::syscall_entry);
+    // Allocate user stack
+    let user_stack_begin = unsafe {
+        alloc::alloc::alloc(alloc::alloc::Layout::from_size_align_unchecked(
+            0x4000, 0x1000,
+        ))
+    };
+    assert!(!user_stack_begin.is_null());
+    log::debug!("Allocated user stack at {:?}", user_stack_begin);
 
+    // Switch to user context and call ELF's main()
+    let elf_main = elf_file.entry() as usize + rsrv_base as usize;
+    let task = hal::task::Task::create(user_stack_begin as usize + 0x4000);
+    // Hack: write the entry point to rbx (used by `ret_from_fork`)
+    task.lock().ktask_ctx.as_mut().unwrap().rbx = elf_main;
+
+    let task_future = hal::task::TaskFuture::new(task);
+    executor::spawn(task_future);
+    executor::run_until_idle();
+
+    log::debug!("All kernel tasks have exited");
     sgx_status_t::SGX_SUCCESS
 }

@@ -1,8 +1,6 @@
 #![no_std]
 #![no_main]
 
-use core::cell::UnsafeCell;
-
 core::arch::global_asm!(
     r#"
     .section .text.entry
@@ -13,18 +11,13 @@ _start:
     "#
 );
 
-struct RacyCell<T>(UnsafeCell<T>);
-unsafe impl<T> Sync for RacyCell<T> {}
-
 const WRITE: usize = 1;
 const EXIT: usize = 60;
 static MSG: &str = "Hello, world!\n";
-static SYSCALLER: RacyCell<usize> = RacyCell(UnsafeCell::new(0));
 
 unsafe fn syscall(nr: usize, arg0: usize, arg1: usize, arg2: usize) {
     core::arch::asm!(
-        "call {syscaller}",
-        syscaller = in(reg) SYSCALLER.0.get().read(),
+        "call gs:[0x8]",
         inout("rax") nr => _,
         in("rdi") arg0,
         in("rsi") arg1,
@@ -35,9 +28,8 @@ unsafe fn syscall(nr: usize, arg0: usize, arg1: usize, arg2: usize) {
 }
 
 #[no_mangle]
-extern "C" fn main(syscaller: usize) {
+extern "C" fn main() {
     unsafe {
-        SYSCALLER.0.get().write(syscaller);
         syscall(WRITE, 1, MSG.as_bytes().as_ptr() as usize, MSG.len());
         syscall(EXIT, 0, 0, 0);
     }

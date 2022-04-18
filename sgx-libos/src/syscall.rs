@@ -5,10 +5,6 @@ use sgx_types::{int32_t, sgx_exception_info_t};
 
 core::arch::global_asm!(include_str!("asm/syscall.asm"));
 
-extern "C" {
-    pub fn syscall_entry();
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn handle_syscall(
     arg0: usize,
@@ -36,6 +32,8 @@ pub unsafe extern "C" fn handle_syscall(
         }
         None => panic!("unknown syscall number {}", nr),
     }
+
+    hal::task::yield_to_sched();
 
     result
 }

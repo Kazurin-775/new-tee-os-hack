@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 elf-loader = { path = "../elf-loader" }
+executor = { git = "https://github.com/rcore-os/executor.git", rev = "04b6b7b" }
 hal = { path = "../hal", features = ["sgx"] }
 kconfig = { path = "../kconfig", features = ["sgx"] }
 linux-abi = { path = "../linux-abi" }
