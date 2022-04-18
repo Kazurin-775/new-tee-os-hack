@@ -20,14 +20,9 @@ pub unsafe fn initialize_edge_caller(utm_base: *mut u8) {
     );
 }
 
-extern "C" {
-    fn ocall_edge_kick(eid: u64) -> isize;
-}
-
 fn edge_call_kick() -> edge_proto::caller::Result<()> {
-    unsafe {
-        ocall_edge_kick(0);
-    }
+    let result = unsafe { crate::arch::sgx::ocall_edge_kick() };
+    assert_eq!(result, sgx_types::sgx_status_t::SGX_SUCCESS);
     Ok(())
 }
 

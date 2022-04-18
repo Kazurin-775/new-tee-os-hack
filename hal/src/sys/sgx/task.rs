@@ -93,13 +93,12 @@ core::arch::global_asm!(include_str!("task.asm"));
 
 #[no_mangle]
 pub unsafe extern "C" fn ktask_enter(from: *mut KtaskCtx, to: *mut KtaskCtx) {
-    extern "C" {
-        fn ocall_switch_gs_base(old_gs_base: *mut usize, new_gs_base: usize) -> u32;
-    }
-
-    // Switch GS base first, since this involves an OCALL.
+    // Switch GS base using Rust code, since this involves an OCALL.
     let mut old_gs = 0xDEADBEEF;
-    assert_eq!(ocall_switch_gs_base(&mut old_gs, (*to).gs_offset), 0);
+    let result = crate::arch::sgx::ocall_switch_gs_base(&mut old_gs, (*to).gs_offset);
+    assert_eq!(result, sgx_types::sgx_status_t::SGX_SUCCESS);
+
+    // Save old GS to `from` if needed.
     if old_gs != 0 {
         // We are switching from a Ktask back to the sched.
         assert_eq!((*from).gs_offset, old_gs);
