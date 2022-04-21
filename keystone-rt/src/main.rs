@@ -4,10 +4,10 @@
 
 extern crate alloc;
 
-use hal::edge::EdgeFile;
+use hal::{arch::keystone::vm::UserAddressSpace, edge::EdgeFile, vm::AddressSpace};
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
 use log::debug;
-use riscv_sv39::{PageTableEntry, VirtAddr};
+use riscv_sv39::{PhysAddr, VirtAddr};
 
 mod elf;
 mod entry;
@@ -22,12 +22,10 @@ mod vm;
 #[global_allocator]
 static ALLOC: LockedLinkedListHeap = unsafe { LockedLinkedListHeap::uninit() };
 
-static EPM_PHYS: spin::Once<usize> = spin::Once::new();
-
 #[no_mangle]
 extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
     // initialize EPM_PHYS
-    EPM_PHYS.call_once(|| vm_info.epm_base);
+    hal::arch::keystone::EPM_PHYS.call_once(|| vm_info.epm_base);
     // initialize modules
     klog::klog_init().expect("failed to initialize klog module");
     unsafe {
@@ -37,13 +35,12 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
 
     // load U-mode program
     let entry;
-    unsafe {
+    {
         // open ELF file
         let mut elf_file = elf::EdgeElfFile(EdgeFile::open("keystone-init"));
 
         // load & map ELF file
-        let mem_mgr = vm::HeapPageManager::new();
-        let mut root_page_table = vm::current_root_page_table();
+        let mut addr_space = UserAddressSpace::current();
         let elf = elf_loader::ElfFile::new(&mut elf_file, elf_loader::arch::RiscV);
         elf.load_mapped(&mut elf_file, |from, size, to| {
             debug!(
@@ -52,23 +49,16 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
             );
             let from = from as usize;
             for i in 0..(size + 0xFFF) >> 12 {
-                root_page_table.map_4k(
+                addr_space.map_single(
                     VirtAddr(to + (i << 12)),
-                    PageTableEntry::for_phys(mem_mgr.virt2phys(VirtAddr(from + (i << 12))))
-                        .make_user()
-                        .make_rwx(),
+                    PhysAddr(addr_space.virt2phys((from + (i << 12)) as *const ())),
                 );
             }
         });
         entry = elf.entry() as usize;
 
         // map an extra page for the initial stack
-        root_page_table.map_4k(
-            VirtAddr(hal::cfg::USER_STACK_END - 0x1_000),
-            PageTableEntry::for_phys(mem_mgr.virt2phys(crate::vm::alloc_page()))
-                .make_user()
-                .make_rwx(),
-        );
+        addr_space.alloc_map(hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END);
     }
 
     // Copy argv and envp to the user stack's end

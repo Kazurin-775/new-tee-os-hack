@@ -1,5 +1,3 @@
-use log::debug;
-
 use crate::{frame::TrapFrame, syscall::handle_syscall, uart_println};
 
 core::arch::global_asm!(include_str!("asm/trap.S"));
@@ -15,9 +13,8 @@ unsafe extern "C" fn trap_handler(frame: *mut TrapFrame) {
         }
         Trap::Exception(Exception::LoadPageFault | Exception::StorePageFault) => {
             let addr = riscv::register::stval::read();
-            debug!("Page fault at address {:#X}", addr);
             crate::vm::handle_page_fault_at(addr);
-            // now just redo the errorneous instruction
+            // now just redo the errornous instruction
         }
         _ => unknown_trap(),
     }
