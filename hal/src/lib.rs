@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 #![feature(const_btree_new, map_first_last)]
 
 extern crate alloc;
