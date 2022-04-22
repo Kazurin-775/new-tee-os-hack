@@ -11,10 +11,11 @@ pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     let bootloader_manifest_path = bootloader_locator::locate_bootloader("bootloader").unwrap();
     let kernel_manifest_path = locate_cargo_manifest::locate_manifest().unwrap();
 
-    // FIXME: there may be a bug in the bootloader crate
-    let mut build_cmd = Command::new("cargo");
+    // Note: please ensure that neither of `x86-vm-kernel` and `x86-vmm-qemu`
+    // has been `rustup override`d, or nasty things can happen.
+    let mut build_cmd = Command::new(env!("CARGO"));
     build_cmd.current_dir(bootloader_manifest_path.parent().unwrap());
-    build_cmd.arg("+nightly").arg("builder");
+    build_cmd.arg("builder");
     build_cmd
         .arg("--kernel-manifest")
         .arg(&kernel_manifest_path);
