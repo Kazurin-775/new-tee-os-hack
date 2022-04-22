@@ -17,6 +17,9 @@
     .global trap_entry
 
 trap_entry:
+    # TODO: the current implementation cannot handle traps originated from the
+    # kernel. We should figure out a better way to handle context switching.
+
     # save user tp and load kernel tp
     csrrw   tp, sscratch, tp
     bnez    tp, 1f
