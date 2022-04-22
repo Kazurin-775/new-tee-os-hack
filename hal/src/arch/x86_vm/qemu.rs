@@ -11,15 +11,20 @@ pub fn exit_qemu(exit_code: u32) {
     }
 }
 
-fn new_mutex_serial(port_base: u16) -> Mutex<SerialPort> {
+fn new_mutex_serial(port_base: u16, flag_bytes: bool) -> Mutex<SerialPort> {
     let mut serial_port = unsafe { SerialPort::new(port_base) };
     serial_port.init();
+    if flag_bytes {
+        for _ in 0..4 {
+            serial_port.send_raw(0x7F);
+        }
+    }
     Mutex::new(serial_port)
 }
 
 lazy_static! {
-    pub static ref SERIAL_DBG: Mutex<SerialPort> = new_mutex_serial(0x3F8);
-    pub static ref SERIAL_EDGE: Mutex<SerialPort> = new_mutex_serial(0x2F8);
+    pub static ref SERIAL_DBG: Mutex<SerialPort> = new_mutex_serial(0x3F8, false);
+    pub static ref SERIAL_EDGE: Mutex<SerialPort> = new_mutex_serial(0x2F8, true);
 }
 
 #[macro_export]

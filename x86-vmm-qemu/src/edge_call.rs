@@ -50,6 +50,24 @@ impl EdgeStream for EdgeCallClient {
     }
 }
 
+impl EdgeCallClient {
+    pub fn wait_for_flag_bytes(&mut self) -> std::io::Result<usize> {
+        let mut byte = [0; 1];
+        let (mut count, mut total) = (0, 0);
+        while count < 4 {
+            self.0.read(&mut byte)?;
+            total += 1;
+            if byte[0] == 0x7F {
+                count += 1;
+            } else {
+                count = 0;
+                // log::trace!("Stray byte {:#X} ({})", byte[0], count);
+            }
+        }
+        Ok(total)
+    }
+}
+
 impl EdgeCallServer {
     pub fn new() -> anyhow::Result<EdgeCallServer> {
         match std::fs::remove_file("edge.sock") {
@@ -65,6 +83,13 @@ impl EdgeCallServer {
         let mut incoming = self.sock.incoming();
         if let Some(stream) = incoming.next() {
             let mut edge_stream = EdgeCallClient(stream.context("accept connection")?, Vec::new());
+            let stray_bytes = edge_stream
+                .wait_for_flag_bytes()
+                .context("wait for flag bytes")?;
+            log::debug!(
+                "Edge call client has been initialized ({} stray bytes)",
+                stray_bytes,
+            );
             loop {
                 let req = edge_stream.read_header().compat().context("read header")?;
                 if req == EdgeCallReq::StreamShutdown {
