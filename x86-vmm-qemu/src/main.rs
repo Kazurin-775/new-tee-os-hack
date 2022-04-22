@@ -25,7 +25,7 @@ pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     build_cmd
         .arg("--out-dir")
         .arg(kernel_binary_path.parent().unwrap());
-    build_cmd.arg("--firmware").arg("bios");
+    build_cmd.arg("--firmware").arg("uefi");
 
     if !build_cmd.status().unwrap().success() {
         panic!("build failed");
@@ -35,7 +35,7 @@ pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
     let disk_image = kernel_binary_path
         .parent()
         .unwrap()
-        .join(format!("boot-bios-{}.img", kernel_binary_name));
+        .join(format!("boot-uefi-{}.img", kernel_binary_name));
     if !disk_image.exists() {
         panic!("disk image {} not found", disk_image.display());
     }
@@ -86,6 +86,12 @@ fn main() -> anyhow::Result<()> {
         // security options
         "-cpu",
         "kvm64,smap,smep",
+        // use OVMF to boot the VM
+        // "-bios", "/usr/share/ovmf/OVMF.fd",
+        "-drive",
+        "if=pflash,format=raw,unit=0,file=/usr/share/OVMF/OVMF_CODE.fd,readonly",
+        "-drive",
+        "if=pflash,format=raw,unit=1,file=OVMF_VARS.fd",
     ]);
 
     let mut run_process = run_cmd.spawn().context("spawn qemu process")?;
