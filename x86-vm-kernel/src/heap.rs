@@ -6,11 +6,16 @@ use kmalloc::{Kmalloc, LockedLinkedListHeap};
 
 #[global_allocator]
 static HEAP: LockedLinkedListHeap = unsafe { LockedLinkedListHeap::uninit() };
+const MIN_HEAP_SIZE: u64 = 4 << 20; // 4 MiB
 
 pub fn init(boot_info: &BootInfo) {
     let mut heap_region: Option<&MemoryRegion> = None;
     for memory_region in boot_info.memory_regions.iter() {
-        if memory_region.kind == MemoryRegionKind::Usable {
+        // TODO: the memory layout returned by UEFI firmware is quite complex,
+        // use with caution
+        if memory_region.kind == MemoryRegionKind::Usable
+            && memory_region.end - memory_region.start >= MIN_HEAP_SIZE
+        {
             if let Some(_) = heap_region {
                 log::warn!("Ignoring extra memory region {:?}", memory_region);
             } else {
