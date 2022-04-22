@@ -1,30 +1,23 @@
 use hal::{
-    arch::x86_vm::gdt,
+    arch::x86_vm::{gdt, vm::UserAddressSpace},
     edge::EdgeFile,
     task::{Task, TaskFuture},
+    vm::AddressSpace,
 };
-use x86_64::{
-    structures::paging::{
-        FrameAllocator, Mapper, OffsetPageTable, Page, PageTableFlags, PhysFrame, Size4KiB,
-    },
-    PhysAddr, VirtAddr,
-};
+use x86_64::{PhysAddr, VirtAddr};
 
-use crate::{elf::EdgeElfFile, memory::MIRROR_BASE_VIRT};
+use crate::elf::EdgeElfFile;
 
 pub fn enter_user_mode() {
     // get root page table
-    let rpt_phys = x86_64::registers::control::Cr3::read().0;
-    let rpt_ptr = (MIRROR_BASE_VIRT + rpt_phys.start_address().as_u64()).as_mut_ptr();
-    let mut rpt = unsafe { OffsetPageTable::new(&mut *rpt_ptr, MIRROR_BASE_VIRT) };
-    let mut frame_allocator = crate::memory::HeapFrameAlloc;
+    let mut addr_space = UserAddressSpace::current();
 
     // load init ELF file
     let entry_point;
     {
         let mut edge_file = EdgeElfFile(EdgeFile::open("x86-vm-init"));
         let elf_file = elf_loader::ElfFile::new(&mut edge_file, elf_loader::arch::X86_64);
-        elf_file.load_mapped(&mut edge_file, |from, size, to| unsafe {
+        elf_file.load_mapped(&mut edge_file, |from, size, to| {
             log::debug!(
                 "ELF loader: mapping ({:?} + {:#X}) -> {:#X}",
                 from,
@@ -33,20 +26,10 @@ pub fn enter_user_mode() {
             );
             let from = from as usize;
             for i in 0..(size + 0xFFF) >> 12 {
-                rpt.map_to(
-                    Page::<Size4KiB>::from_start_address(VirtAddr::new((to + (i << 12)) as u64))
-                        .unwrap(),
-                    PhysFrame::from_start_address(PhysAddr::new(
-                        (from + (i << 12)) as u64 - MIRROR_BASE_VIRT.as_u64(),
-                    ))
-                    .unwrap(),
-                    PageTableFlags::PRESENT
-                        | PageTableFlags::WRITABLE
-                        | PageTableFlags::USER_ACCESSIBLE,
-                    &mut frame_allocator,
-                )
-                .unwrap()
-                .flush();
+                addr_space.map_single(
+                    VirtAddr::new((to + (i << 12)) as u64),
+                    PhysAddr::new(addr_space.virt2phys((from + (i << 12)) as *const ()) as u64),
+                );
             }
         });
         entry_point = elf_file.entry();
@@ -54,20 +37,7 @@ pub fn enter_user_mode() {
     }
 
     // allocate pages for user stack
-    unsafe {
-        rpt.map_to(
-            Page::from_start_address(VirtAddr::new(hal::cfg::USER_STACK_TOP as u64 - 0x1000))
-                .unwrap(),
-            frame_allocator.allocate_frame().unwrap(),
-            PageTableFlags::PRESENT
-                | PageTableFlags::WRITABLE
-                | PageTableFlags::USER_ACCESSIBLE
-                | PageTableFlags::NO_EXECUTE,
-            &mut frame_allocator,
-        )
-        .unwrap()
-        .flush();
-    }
+    addr_space.alloc_map(hal::cfg::USER_STACK_TOP - 0x1000..hal::cfg::USER_STACK_TOP);
 
     // construct a task
     // Currently the `user_sp` is not initialized here, but rather in `ret_from_fork`.

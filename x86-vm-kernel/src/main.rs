@@ -8,7 +8,6 @@ mod elf;
 mod heap;
 mod interrupt;
 mod klog;
-mod memory;
 mod panic;
 mod syscall;
 mod user;
