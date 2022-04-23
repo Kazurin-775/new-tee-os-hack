@@ -3,5 +3,5 @@
 BINFILE='/tmp/keystone-rt.bin'
 
 riscv64-unknown-elf-objcopy -O binary "$1" $BINFILE
-scp -P 8022 "$BINFILE" 'root@localhost:/root/'
+scp -O -P 8022 "$BINFILE" 'root@localhost:/root/'
 rm "$BINFILE"
