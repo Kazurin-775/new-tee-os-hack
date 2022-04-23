@@ -13,6 +13,9 @@
         ld  \reg, \offset * REGBYTES(tp)
         sd  zero, \offset * REGBYTES(tp)
     .endm
+    .macro SPLOAD reg, offset
+        ld  \reg, \offset * REGBYTES(sp)
+    .endm
 
     .text
     .global ktask_enter
@@ -68,13 +71,50 @@ ktask_leave:
     j       ktask_enter
 
 ret_from_fork:
-    # switch kernel sp and user sp
-    TPSTORE sp, 1
-    TPLOAD  sp, 0
-
     # write kernel tp to sscratch
     csrw    sscratch, tp
-    # avoid exposing kernel tp
-    mv      tp, x0
+
+    # save kernel sp after UserspaceRegs load
+    addi    t0, sp, 32 * REGBYTES
+    TPSTORE t0, 1
+
+    # load CSRs from UserspaceRegs
+    SPLOAD  t0,  31
+    csrw    sepc, t0
+
+    # load all registers from UserspaceRegs
+    SPLOAD  ra,   0
+    SPLOAD  gp,   2
+    SPLOAD  tp,   3
+    SPLOAD  t0,   4
+    SPLOAD  t1,   5
+    SPLOAD  t2,   6
+    SPLOAD  s0,   7
+    SPLOAD  s1,   8
+    SPLOAD  a0,   9
+    SPLOAD  a1,  10
+    SPLOAD  a2,  11
+    SPLOAD  a3,  12
+    SPLOAD  a4,  13
+    SPLOAD  a5,  14
+    SPLOAD  a6,  15
+    SPLOAD  a7,  16
+    SPLOAD  s2,  17
+    SPLOAD  s3,  18
+    SPLOAD  s4,  19
+    SPLOAD  s5,  20
+    SPLOAD  s6,  21
+    SPLOAD  s7,  22
+    SPLOAD  s8,  23
+    SPLOAD  s9,  24
+    SPLOAD  s10, 25
+    SPLOAD  s11, 26
+    SPLOAD  t3,  27
+    SPLOAD  t4,  28
+    SPLOAD  t5,  29
+    SPLOAD  t6,  30
+    # finally, load sp
+    SPLOAD  sp,   1
+
     # jump to user main
     sret

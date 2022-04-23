@@ -54,11 +54,17 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn create(mm: TaskMmStruct, user_sp: usize) -> Arc<Mutex<Task>> {
+    pub fn create(mm: TaskMmStruct, userspace_regs: &UserspaceRegs) -> Arc<Mutex<Task>> {
         let pid = PID_POOL.try_lock().unwrap().alloc();
-        let tls = Box::new(KtaskTls::from_user_sp(user_sp));
+        let tls = Box::new(KtaskTls::new());
+        let userspace_regs = unsafe {
+            core::slice::from_raw_parts(
+                userspace_regs as *const _ as *const u8,
+                core::mem::size_of::<UserspaceRegs>(),
+            )
+        };
         // TODO: free kernel stack
-        let ktask_ctx = Some(KtaskCtx::allocate_for(tls.as_ref()));
+        let ktask_ctx = Some(KtaskCtx::allocate_for(tls.as_ref(), userspace_regs));
         let task = Task {
             pid,
             exited: false,

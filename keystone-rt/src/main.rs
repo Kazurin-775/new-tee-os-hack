@@ -5,7 +5,7 @@
 extern crate alloc;
 
 use hal::{
-    arch::keystone::vm::UserAddressSpace,
+    arch::keystone::{frame::UserspaceRegs, vm::UserAddressSpace},
     edge::EdgeFile,
     task::{Task, TaskFuture, TaskMmStruct, VmArea},
     vm::AddressSpace,
@@ -92,12 +92,18 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
     }
 
     log::debug!("Run keystone-init as init process");
-    let task = Task::create(mm, user_sp);
+    let userspace_regs = UserspaceRegs {
+        sp: user_sp,
+        sepc: entry,
+        ..Default::default()
+    };
+    let task = Task::create(mm, &userspace_regs);
     let task_future = TaskFuture::new(task);
 
     // execute U-mode program
     unsafe {
-        riscv::register::sepc::write(entry);
+        // this should only be needed to be set once if no traps occur
+        // in S-mode
         riscv::register::sstatus::set_spp(riscv::register::sstatus::SPP::User);
     }
     executor::spawn(task_future);

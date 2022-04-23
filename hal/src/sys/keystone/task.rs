@@ -1,3 +1,7 @@
+use kconfig::KERNEL_STACK_SIZE;
+
+pub use crate::arch::keystone::frame::UserspaceRegs;
+
 #[repr(C)]
 #[derive(Default)]
 pub struct KtaskTls {
@@ -31,15 +35,13 @@ pub struct KtaskCtx {
     s11: usize,
 }
 
-const KERNEL_STACK_SIZE: usize = 0x4_000;
 const KERNEL_STACK_LAYOUT: alloc::alloc::Layout = unsafe {
     alloc::alloc::Layout::from_size_align_unchecked(KERNEL_STACK_SIZE, kconfig::PAGE_SIZE)
 };
 
 impl KtaskTls {
-    pub fn from_user_sp(user_sp: usize) -> KtaskTls {
+    pub fn new() -> KtaskTls {
         KtaskTls {
-            user_sp,
             ..Default::default()
         }
     }
@@ -50,12 +52,20 @@ impl KtaskTls {
 }
 
 impl KtaskCtx {
-    pub fn allocate_for(thread_ctx: *const KtaskTls) -> KtaskCtx {
+    pub fn allocate_for(thread_ctx: *const KtaskTls, userspace_regs: &[u8]) -> KtaskCtx {
         let kernel_stack = unsafe { alloc::alloc::alloc(KERNEL_STACK_LAYOUT) };
         assert!(!kernel_stack.is_null(), "failed to allocate kernel stack");
-        let kernel_stack_end = unsafe { kernel_stack.add(KERNEL_STACK_SIZE) };
+        // copy userspace regs to the end of kernel stack
+        assert!(userspace_regs.len() <= KERNEL_STACK_SIZE);
+        let kernel_sp;
+        unsafe {
+            kernel_sp = kernel_stack.add(KERNEL_STACK_SIZE - userspace_regs.len());
+            core::slice::from_raw_parts_mut(kernel_sp, userspace_regs.len())
+                .copy_from_slice(userspace_regs);
+        }
+
         KtaskCtx {
-            sp: kernel_stack_end as usize,
+            sp: kernel_sp as usize,
             ra: ret_from_fork as usize,
             tp: thread_ctx as usize,
             ..Default::default()

@@ -1,3 +1,4 @@
+pub mod frame;
 pub mod sbi;
 pub mod vm;
 
