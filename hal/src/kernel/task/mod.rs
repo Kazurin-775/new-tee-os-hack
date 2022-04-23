@@ -10,9 +10,11 @@ use core::{
 };
 use spin::Mutex;
 
+mod mm;
 mod pid_pool;
 
 use crate::sys::task::*;
+pub use mm::{TaskMmStruct, VmArea};
 pub use pid_pool::PidPool;
 
 pub type Pid = i32;
@@ -47,10 +49,12 @@ pub struct Task {
     /// `None`), and then returns it when the task yields back.
     /// This field should never be `None` at any other time.
     pub ktask_ctx: Option<KtaskCtx>,
+
+    pub mm: TaskMmStruct,
 }
 
 impl Task {
-    pub fn create(user_sp: usize) -> Arc<Mutex<Task>> {
+    pub fn create(mm: TaskMmStruct, user_sp: usize) -> Arc<Mutex<Task>> {
         let pid = PID_POOL.try_lock().unwrap().alloc();
         let tls = Box::new(KtaskTls::from_user_sp(user_sp));
         // TODO: free kernel stack
@@ -60,6 +64,7 @@ impl Task {
             exited: false,
             tls,
             ktask_ctx,
+            mm,
         };
 
         // Initialize `current` pointer

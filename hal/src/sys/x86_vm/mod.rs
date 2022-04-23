@@ -1,6 +1,7 @@
 pub mod edge;
 pub mod mem;
 pub mod task;
+pub mod vm;
 
 pub fn exit_enclave(retval: usize) {
     // send a "stream close" signal

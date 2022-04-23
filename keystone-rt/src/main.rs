@@ -4,7 +4,12 @@
 
 extern crate alloc;
 
-use hal::{arch::keystone::vm::UserAddressSpace, edge::EdgeFile, vm::AddressSpace};
+use hal::{
+    arch::keystone::vm::UserAddressSpace,
+    edge::EdgeFile,
+    task::{Task, TaskFuture, TaskMmStruct},
+    vm::AddressSpace,
+};
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
 use log::debug;
 use riscv_sv39::{PhysAddr, VirtAddr};
@@ -35,12 +40,12 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
 
     // load U-mode program
     let entry;
+    let mut addr_space = UserAddressSpace::current();
     {
         // open ELF file
         let mut elf_file = elf::EdgeElfFile(EdgeFile::open("keystone-init"));
 
         // load & map ELF file
-        let mut addr_space = UserAddressSpace::current();
         let elf = elf_loader::ElfFile::new(&mut elf_file, elf_loader::arch::RiscV);
         elf.load_mapped(&mut elf_file, |from, size, to| {
             debug!(
@@ -73,8 +78,12 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
     }
 
     log::debug!("Run keystone-init as init process");
-    let task = hal::task::Task::create(user_sp);
-    let task_future = hal::task::TaskFuture::new(task);
+    let mm = TaskMmStruct::new(
+        addr_space,
+        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
+    );
+    let task = Task::create(mm, user_sp);
+    let task_future = TaskFuture::new(task);
 
     // execute U-mode program
     unsafe {

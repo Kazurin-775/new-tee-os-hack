@@ -7,6 +7,9 @@ pub mod mem;
 /// Implementations of process data structures and operations.
 pub mod task;
 
+/// Virtual memory abstractions.
+pub mod vm;
+
 use crate::arch::keystone::sbi;
 
 pub fn exit_enclave(retval: usize) {

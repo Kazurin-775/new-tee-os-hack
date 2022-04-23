@@ -79,3 +79,11 @@ impl UserAddressSpace {
         }
     }
 }
+
+unsafe impl Send for UserAddressSpace {}
+
+impl core::fmt::Debug for UserAddressSpace {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("UserAddressSpace").finish()
+    }
+}
