@@ -1,4 +1,7 @@
+use kconfig::{KERNEL_STACK_SIZE, PAGE_SIZE};
 use x86_64::registers::model_specific as msr;
+
+pub use crate::arch::x86_vm::frame::UserspaceRegs;
 
 #[repr(C)]
 #[derive(Default)]
@@ -31,12 +34,11 @@ pub struct KtaskCtx {
 }
 
 const KERNEL_STACK_LAYOUT: alloc::alloc::Layout =
-    unsafe { alloc::alloc::Layout::from_size_align_unchecked(0x4000, 0x1000) };
+    unsafe { alloc::alloc::Layout::from_size_align_unchecked(KERNEL_STACK_SIZE, PAGE_SIZE) };
 
 impl KtaskTls {
-    pub fn from_user_sp(user_sp: usize) -> KtaskTls {
+    pub fn new() -> KtaskTls {
         KtaskTls {
-            foreign_sp: user_sp,
             ..Default::default()
         }
     }
@@ -47,14 +49,24 @@ impl KtaskTls {
 }
 
 impl KtaskCtx {
-    pub fn allocate_for(thread_ctx: *const KtaskTls) -> KtaskCtx {
-        let stack = unsafe { alloc::alloc::alloc(KERNEL_STACK_LAYOUT) };
-        // write the task's entry address at the bottom of the stack
+    pub fn allocate_for(thread_ctx: *const KtaskTls, userspace_regs: &[u8]) -> KtaskCtx {
+        let kernel_stack = unsafe { alloc::alloc::alloc(KERNEL_STACK_LAYOUT) };
+        // copy userspace regs & the address of `ret_from_fork` to the end of kernel stack
+        let len_to_write = core::mem::size_of::<usize>() + userspace_regs.len();
+        assert!(len_to_write <= KERNEL_STACK_SIZE);
+        let kernel_sp;
         unsafe {
-            (stack.offset(0x3FF8) as *mut u64).write(ret_from_fork as u64);
+            kernel_sp = kernel_stack.add(KERNEL_STACK_SIZE - len_to_write);
+            (kernel_sp as *mut usize).write(ret_from_fork as usize);
+            core::slice::from_raw_parts_mut(
+                kernel_sp.add(core::mem::size_of::<usize>()),
+                userspace_regs.len(),
+            )
+            .copy_from_slice(userspace_regs);
         }
+
         KtaskCtx {
-            rsp: (stack as usize) + 0x3FF8,
+            rsp: kernel_sp as usize,
             gs_offset: thread_ctx as usize,
             ..Default::default()
         }

@@ -1,6 +1,7 @@
     .text
     .global ktask_enter
     .global ktask_leave
+    .global ret_from_fork
 
 ktask_enter:
     # save context
@@ -51,3 +52,36 @@ ktask_leave:
     mov     rsi, gs:[0x08]
 
     jmp     ktask_enter
+
+ret_from_fork:
+    # load user DS and ES
+    # Note: when placing UserspaceRegs on the stack, `ret_from_fork` cannot be
+    # declared as a Rust function anymore, since jumping out from the middle of
+    # a Rust function results in misplaced `rsp`.
+    call    load_user_ds
+
+    # save kernel sp
+    mov    gs:[0], rsp
+    # load user GS base
+    swapgs
+
+    # // pop registers from UserspaceRegs
+    pop     rax
+    pop     rbx
+    pop     rcx
+    pop     rdx
+    pop     rsi
+    pop     rdi
+    pop     rbp
+    pop     r8
+    pop     r9
+    pop     r10
+    pop     r11
+    pop     r12
+    pop     r13
+    pop     r14
+    pop     r15
+
+    # an interrupt stack frame is already constructed by UserspaceRegs, so
+    # just do an iret
+    iretq

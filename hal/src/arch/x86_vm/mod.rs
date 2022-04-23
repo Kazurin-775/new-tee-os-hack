@@ -1,3 +1,4 @@
+pub mod frame;
 pub mod gdt;
 pub mod qemu;
 pub mod security;

@@ -1,5 +1,5 @@
 use hal::{
-    arch::x86_vm::{gdt, vm::UserAddressSpace},
+    arch::x86_vm::{frame::UserspaceRegs, gdt, vm::UserAddressSpace},
     edge::EdgeFile,
     task::{Task, TaskFuture, TaskMmStruct},
     vm::AddressSpace,
@@ -37,18 +37,22 @@ pub fn enter_user_mode() {
     }
 
     // allocate pages for user stack
-    addr_space.alloc_map(hal::cfg::USER_STACK_TOP - 0x1000..hal::cfg::USER_STACK_TOP);
+    addr_space.alloc_map(hal::cfg::USER_STACK_END - 0x1000..hal::cfg::USER_STACK_END);
 
     // construct a task
     let mm = TaskMmStruct::new(
         addr_space,
-        hal::cfg::USER_STACK_TOP - 0x1_000..hal::cfg::USER_STACK_TOP,
+        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
     );
-    // Currently the `user_sp` is not initialized here, but rather in `ret_from_fork`.
-    // This should be a bug (it prevents `fork` from being implemented properly).
-    let task = Task::create(mm, 0);
-    // Hack: write the entry point to rbx (used by `ret_from_fork`)
-    task.lock().ktask_ctx.as_mut().unwrap().rbx = entry_point as usize;
+    let userspace_regs = UserspaceRegs {
+        ss: gdt::USER_DATA_SEL.0 as usize,
+        rsp: hal::cfg::USER_STACK_END,
+        rflags: x86_64::registers::rflags::read_raw() as usize,
+        cs: gdt::USER_CODE_SEL.0 as usize,
+        rip: entry_point as usize,
+        ..Default::default()
+    };
+    let task = Task::create(mm, &userspace_regs);
     let task_future = TaskFuture::new(task);
 
     // enter user mode
@@ -57,28 +61,6 @@ pub fn enter_user_mode() {
 }
 
 #[no_mangle]
-unsafe extern "C" fn ret_from_fork() -> ! {
+unsafe extern "C" fn load_user_ds() {
     gdt::enter_user();
-
-    core::arch::asm!(
-        // save kernel sp
-        "mov    gs:[0], rsp",
-        "swapgs",
-        // construct an interrupt stack frame
-        "push   {ss}",
-        // {rsp} cannot fit into an imm32
-        "mov    rax, {rsp}",
-        "push   rax",
-        "pushf",
-        "push   {cs}",
-        "push   rbx", // rip
-        // return to user!
-        "iretq",
-
-        rsp = const hal::cfg::USER_STACK_TOP,
-        ss = const gdt::USER_DATA_SEL.0,
-        cs = const gdt::USER_CODE_SEL.0,
-
-        options(noreturn),
-    );
 }
