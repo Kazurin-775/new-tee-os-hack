@@ -1,7 +1,7 @@
 use hal::{
     arch::x86_vm::{frame::UserspaceRegs, gdt, vm::UserAddressSpace},
     edge::EdgeFile,
-    task::{Task, TaskFuture, TaskMmStruct},
+    task::{Task, TaskFuture, TaskMmStruct, VmArea},
     vm::AddressSpace,
 };
 use x86_64::{PhysAddr, VirtAddr};
@@ -10,7 +10,11 @@ use crate::elf::EdgeElfFile;
 
 pub fn enter_user_mode() {
     // get root page table
-    let mut addr_space = UserAddressSpace::current();
+    let addr_space = UserAddressSpace::current();
+    let mut mm = TaskMmStruct::new(
+        addr_space,
+        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
+    );
 
     // load init ELF file
     let entry_point;
@@ -26,24 +30,29 @@ pub fn enter_user_mode() {
             );
             let from = from as usize;
             for i in 0..(size + 0xFFF) >> 12 {
-                addr_space.map_single(
+                mm.addr_space.map_single(
                     VirtAddr::new((to + (i << 12)) as u64),
-                    PhysAddr::new(addr_space.virt2phys((from + (i << 12)) as *const ()) as u64),
+                    PhysAddr::new(mm.addr_space.virt2phys((from + (i << 12)) as *const ()) as u64),
                 );
             }
+            // map the section to TaskMmStruct
+            // TODO: create an abstraction
+            mm.vmas.insert(
+                to,
+                VmArea {
+                    range: to..to + ((size + 0xFFF) & !0xFFF),
+                },
+            );
         });
         entry_point = elf_file.entry();
         edge_file.0.close();
+
+        // allocate pages for user stack
+        // TODO: this should be done by TaskMmStruct
+        mm.addr_space.alloc_map(mm.stack_zone.clone());
     }
 
-    // allocate pages for user stack
-    addr_space.alloc_map(hal::cfg::USER_STACK_END - 0x1000..hal::cfg::USER_STACK_END);
-
     // construct a task
-    let mm = TaskMmStruct::new(
-        addr_space,
-        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
-    );
     let userspace_regs = UserspaceRegs {
         ss: gdt::USER_DATA_SEL.0 as usize,
         rsp: hal::cfg::USER_STACK_END,

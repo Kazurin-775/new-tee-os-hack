@@ -76,8 +76,7 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
 
         // map an extra page for the initial stack
         // TODO: this should be done by TaskMmStruct
-        mm.addr_space
-            .alloc_map(hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END);
+        mm.addr_space.alloc_map(mm.stack_zone.clone());
     }
 
     // Copy argv and envp to the user stack's end

@@ -8,7 +8,7 @@ use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace};
 pub struct TaskMmStruct {
     pub addr_space: UserAddressSpace,
     pub vmas: BTreeMap<usize, VmArea>,
-    pub stack: Range<usize>,
+    pub stack_zone: Range<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -17,11 +17,11 @@ pub struct VmArea {
 }
 
 impl TaskMmStruct {
-    pub fn new(addr_space: UserAddressSpace, stack: Range<usize>) -> TaskMmStruct {
+    pub fn new(addr_space: UserAddressSpace, stack_zone: Range<usize>) -> TaskMmStruct {
         TaskMmStruct {
             addr_space,
             vmas: BTreeMap::new(),
-            stack,
+            stack_zone,
         }
     }
 
