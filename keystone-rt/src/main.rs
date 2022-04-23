@@ -7,7 +7,7 @@ extern crate alloc;
 use hal::{
     arch::keystone::vm::UserAddressSpace,
     edge::EdgeFile,
-    task::{Task, TaskFuture, TaskMmStruct},
+    task::{Task, TaskFuture, TaskMmStruct, VmArea},
     vm::AddressSpace,
 };
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
@@ -40,7 +40,11 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
 
     // load U-mode program
     let entry;
-    let mut addr_space = UserAddressSpace::current();
+    let addr_space = UserAddressSpace::current();
+    let mut mm = TaskMmStruct::new(
+        addr_space,
+        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
+    );
     {
         // open ELF file
         let mut elf_file = elf::EdgeElfFile(EdgeFile::open("keystone-init"));
@@ -54,16 +58,26 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
             );
             let from = from as usize;
             for i in 0..(size + 0xFFF) >> 12 {
-                addr_space.map_single(
+                mm.addr_space.map_single(
                     VirtAddr(to + (i << 12)),
-                    PhysAddr(addr_space.virt2phys((from + (i << 12)) as *const ())),
+                    PhysAddr(mm.addr_space.virt2phys((from + (i << 12)) as *const ())),
                 );
             }
+            // map the section to TaskMmStruct
+            // TODO: create an abstraction
+            mm.vmas.insert(
+                to,
+                VmArea {
+                    range: to..to + ((size + 0xFFF) & !0xFFF),
+                },
+            );
         });
         entry = elf.entry() as usize;
 
         // map an extra page for the initial stack
-        addr_space.alloc_map(hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END);
+        // TODO: this should be done by TaskMmStruct
+        mm.addr_space
+            .alloc_map(hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END);
     }
 
     // Copy argv and envp to the user stack's end
@@ -78,10 +92,6 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
     }
 
     log::debug!("Run keystone-init as init process");
-    let mm = TaskMmStruct::new(
-        addr_space,
-        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
-    );
     let task = Task::create(mm, user_sp);
     let task_future = TaskFuture::new(task);
 
