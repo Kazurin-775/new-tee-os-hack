@@ -18,18 +18,18 @@ syscall_entry:
     push    r11
 
     # construct C ABI arguments
+    # From: (rdi rsi rdx rax r10 r8  r9   )
+    # To:   (rdi rsi rdx rcx r8  r9  stack)
     mov     rcx, rax
+    push    r9
+    mov     r9, r8
     mov     r8, r10
-
-    # align `rsp` to 16 bytes boundary to avoid potential errors
-    # For the reason of this, see `sgx-libos/src/asm/syscall.asm`.
-    sub     rsp, 8
 
     # jump to Rust code
     call    handle_syscall
     # the return value is stored in rax
 
-    # restore rsp's value before alignment
+    # // pop r9 from the stack
     add     rsp, 8
 
     # restore registers

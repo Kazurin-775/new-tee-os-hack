@@ -16,6 +16,8 @@ unsafe extern "C" fn handle_syscall(
     arg2: usize,
     nr: usize,
     arg3: usize,
+    arg4: usize,
+    arg5: usize,
 ) -> isize {
     gdt::enter_kernel();
     let result;
@@ -34,6 +36,9 @@ unsafe extern "C" fn handle_syscall(
         }
         Some(SyscallHandler::Syscall4(f)) => {
             result = f(arg0, arg1, arg2, arg3);
+        }
+        Some(SyscallHandler::Syscall6(f)) => {
+            result = f(arg0, arg1, arg2, arg3, arg4, arg5);
         }
         None => panic!("unknown syscall number {}", nr),
     }

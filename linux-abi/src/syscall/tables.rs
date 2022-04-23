@@ -21,6 +21,8 @@ pub static TABLE_GENERIC: Map<u32, SyscallHandler> = phf_map! {
     64u32 => SYSCALL_WRITE,
     80u32 => SYSCALL_FSTAT,
     93u32 => SYSCALL_EXIT,
+    215u32 => SYSCALL_MUNMAP,
+    222u32 => SYSCALL_MMAP,
 };
 
 // https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
@@ -29,6 +31,8 @@ pub static TABLE_X86_64: Map<u32, SyscallHandler> = phf_map! {
     1u32 => SYSCALL_WRITE,
     3u32 => SYSCALL_CLOSE,
     5u32 => SYSCALL_FSTAT,
+    9u32 => SYSCALL_MMAP,
+    11u32 => SYSCALL_MUNMAP,
     32u32 => SYSCALL_DUP,
     60u32 => SYSCALL_EXIT,
     79u32 => SYSCALL_GETCWD,

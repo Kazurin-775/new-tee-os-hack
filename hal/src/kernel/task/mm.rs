@@ -1,7 +1,7 @@
 use alloc::collections::BTreeMap;
 use core::ops::Range;
 
-use crate::sys::vm::UserAddressSpace;
+use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace};
 
 // TODO: decide whether addr_space should be Clone & Debug
 #[derive(Debug)]
@@ -25,8 +25,8 @@ impl TaskMmStruct {
         }
     }
 
-    pub fn map_new(&mut self, mut size: usize) -> Result<(), ()> {
-        if (size & 0xFFF) != 9 {
+    pub fn map_anon(&mut self, mut size: usize) -> usize {
+        if (size & 0xFFF) != 0 {
             size = (size & !0xFFF) + 0x1000;
         }
 
@@ -36,9 +36,31 @@ impl TaskMmStruct {
             range: addr..addr + size,
         };
         log::debug!("Adding VMA: {:?}", vma);
+        self.addr_space.alloc_map(vma.range.clone());
         self.vmas.insert(addr, vma);
 
-        Ok(())
+        addr
+    }
+
+    pub fn unmap(&mut self, addr: usize, mut len: usize) -> bool {
+        if (len & 0xFFF) != 0 {
+            len = (len & !0xFFF) + 0x1000;
+        }
+
+        if let Some(vma) = self.vmas.get(&addr) {
+            if len == vma.range.len() {
+                log::debug!("Removing VMA: {:?}", vma);
+                self.vmas.remove(&addr);
+                // TODO: deallocate memory
+                true
+            } else {
+                log::error!("VMA {:?}'s length is not equal to {}", vma, len);
+                false
+            }
+        } else {
+            log::error!("VMA {:#X} does not exist", addr);
+            false
+        }
     }
 
     pub fn first_vma_after(&self, addr: usize) -> Option<&VmArea> {

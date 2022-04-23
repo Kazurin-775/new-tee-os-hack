@@ -7,9 +7,11 @@ use riscv::register::sepc;
 
 pub unsafe fn handle_syscall(frame: *mut TrapFrame) {
     // get arguments from the frame
-    let (nr, arg0, arg1, arg2, arg3) = {
+    let (nr, arg0, arg1, arg2, arg3, arg4, arg5) = {
         let frame = &*frame;
-        (frame.a7, frame.a0, frame.a1, frame.a2, frame.a3)
+        (
+            frame.a7, frame.a0, frame.a1, frame.a2, frame.a3, frame.a4, frame.a5,
+        )
     };
     let nr = nr.try_into().unwrap();
     let result;
@@ -27,6 +29,9 @@ pub unsafe fn handle_syscall(frame: *mut TrapFrame) {
         }
         Some(SyscallHandler::Syscall4(f)) => {
             result = f(arg0, arg1, arg2, arg3);
+        }
+        Some(SyscallHandler::Syscall6(f)) => {
+            result = f(arg0, arg1, arg2, arg3, arg4, arg5);
         }
         None => panic!("unknown syscall number {}", nr),
     }
