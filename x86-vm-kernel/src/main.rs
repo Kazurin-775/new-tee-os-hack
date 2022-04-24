@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(abi_x86_interrupt, asm_const, panic_info_message)]
+#![feature(abi_x86_interrupt, panic_info_message)]
 
 extern crate alloc;
 
