@@ -3,6 +3,8 @@ use linux_abi::syscall::tables::TABLE_X86_64 as SYSCALL_TABLE;
 use linux_abi::syscall::SyscallHandler;
 use x86_64::VirtAddr;
 
+use crate::frame::SyscallFrame;
+
 core::arch::global_asm!(include_str!("asm/syscall.asm"));
 
 extern "C" {
@@ -10,17 +12,17 @@ extern "C" {
 }
 
 #[no_mangle]
-unsafe extern "C" fn handle_syscall(
-    arg0: usize,
-    arg1: usize,
-    arg2: usize,
-    nr: usize,
-    arg3: usize,
-    arg4: usize,
-    arg5: usize,
-) -> isize {
+unsafe extern "C" fn handle_syscall(frame: *mut SyscallFrame) {
     gdt::enter_kernel();
     let result;
+
+    // get arguments from the frame
+    let (nr, arg0, arg1, arg2, arg3, arg4, arg5) = {
+        let frame = &*frame;
+        (
+            frame.rax, frame.rdi, frame.rsi, frame.rdx, frame.r10, frame.r8, frame.r9,
+        )
+    };
 
     // dispatch syscall by number
     let nr = nr as u32;
@@ -43,10 +45,11 @@ unsafe extern "C" fn handle_syscall(
         None => panic!("unknown syscall number {}", nr),
     }
 
+    (*frame).rax = result as usize;
+
     hal::task::yield_to_sched();
 
     gdt::enter_user();
-    result
 }
 
 pub fn init() {

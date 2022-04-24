@@ -7,7 +7,7 @@ syscall_entry:
     xchg    gs:[0], rsp
 
     # save clobbered registers
-    # // push    rax
+    push    rax
     push    rcx
     push    rdx
     push    rsi
@@ -17,20 +17,26 @@ syscall_entry:
     push    r10
     push    r11
 
-    # construct C ABI arguments
-    # From: (rdi rsi rdx rax r10 r8  r9   )
-    # To:   (rdi rsi rdx rcx r8  r9  stack)
-    mov     rcx, rax
-    push    r9
-    mov     r9, r8
-    mov     r8, r10
+    # save callee-saved registers
+    # for more details, see the Keystone part
+    push    rbx
+    push    rbp
+    push    r12
+    push    r13
+    push    r14
+    push    r15
+    pushf
+
+    # XMM registers are not saved (yet)
 
     # jump to Rust code
+    mov     rdi, rsp
     call    handle_syscall
     # the return value is stored in rax
 
-    # // pop r9 from the stack
-    add     rsp, 8
+    #; pop callee-saved from the stack without loading them
+    #  for more details, see the Keystone part
+    add     rsp, 7 * 8
 
     # restore registers
     pop     r11
@@ -41,7 +47,7 @@ syscall_entry:
     pop     rsi
     pop     rdx
     pop     rcx
-    # // pop     rax
+    pop     rax
 
     # save kernel sp & load user sp
     xchg    gs:[0], rsp
