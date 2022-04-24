@@ -32,7 +32,7 @@ trap_entry:
     TPLOAD  sp, 1
 2:
     # save context
-    addi    sp, sp, -16 * REGBYTES
+    addi    sp, sp, -29 * REGBYTES
     STORE   ra, 0
     STORE   t0, 1
     STORE   t1, 2
@@ -49,6 +49,25 @@ trap_entry:
     STORE   a5, 13
     STORE   a6, 14
     STORE   a7, 15
+
+    # Save callee-saved registers
+    # Note that only a very few number of syscalls require these registers,
+    # including `fork` and `ptrace`. It is best to only save them when the
+    # user actually requests these syscalls, but for the sake of simplicity,
+    # we'll save all of them here.
+    STORE   gp,  16
+    STORE   s0,  17
+    STORE   s1,  18
+    STORE   s2,  19
+    STORE   s3,  20
+    STORE   s4,  21
+    STORE   s5,  22
+    STORE   s6,  23
+    STORE   s7,  24
+    STORE   s8,  25
+    STORE   s9,  26
+    STORE   s10, 27
+    STORE   s11, 28
 
     # call Rust's trap handler
     mv      a0, sp
@@ -71,7 +90,10 @@ trap_entry:
     LOAD    a5, 13
     LOAD    a6, 14
     LOAD    a7, 15
-    addi    sp, sp, 16 * REGBYTES
+
+    # We don't need to load callee-saved registers, since they are only
+    # overwritten by a `ptrace`, which we won't support.
+    addi    sp, sp, 29 * REGBYTES
 
     # switch user sp and kernel sp
     TPSTORE sp, 1
