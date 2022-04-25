@@ -33,6 +33,9 @@ pub unsafe fn handle_syscall(frame: *mut TrapFrame) {
         Some(SyscallHandler::Syscall6(f)) => {
             result = f(arg0, arg1, arg2, arg3, arg4, arg5);
         }
+        Some(SyscallHandler::SyscallClone(f)) => {
+            result = f(&(*frame).to_child_regs(), arg0, arg1);
+        }
         None => panic!("unknown syscall number {}", nr),
     }
 

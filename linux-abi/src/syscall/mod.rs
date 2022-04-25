@@ -1,3 +1,5 @@
+use hal::task::UserspaceRegs;
+
 mod dir;
 mod file;
 pub mod listing;
@@ -12,6 +14,7 @@ pub enum SyscallHandler {
     Syscall3(unsafe fn(usize, usize, usize) -> isize),
     Syscall4(unsafe fn(usize, usize, usize, usize) -> isize),
     Syscall6(unsafe fn(usize, usize, usize, usize, usize, usize) -> isize),
+    SyscallClone(unsafe fn(&UserspaceRegs, usize, usize) -> isize),
 }
 
 #[macro_export]

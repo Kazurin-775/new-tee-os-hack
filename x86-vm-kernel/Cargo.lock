@@ -272,6 +272,7 @@ name = "linux-abi"
 version = "0.1.0"
 dependencies = [
  "edge-proto",
+ "executor",
  "hal",
  "log",
  "phf",

@@ -5,6 +5,7 @@ edition = "2018"
 
 [dependencies]
 edge-proto = { path = "../edge-proto" }
+executor = { git = "https://github.com/rcore-os/executor.git", rev = "04b6b7b", optional = true }
 hal = { path = "../hal" }
 log = "0.4.16"
 
@@ -13,3 +14,7 @@ log = "0.4.16"
 version = "0.10.1"
 default-features = false
 features = ["macros"]
+
+[features]
+multitasking = ["executor"]
+default = ["multitasking"]

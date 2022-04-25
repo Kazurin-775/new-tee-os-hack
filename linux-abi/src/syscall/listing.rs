@@ -9,4 +9,4 @@ pub use file::{
     SYSCALL_UNLINKAT, SYSCALL_WRITE,
 };
 pub use mem::{SYSCALL_MMAP, SYSCALL_MUNMAP};
-pub use process::SYSCALL_EXIT;
+pub use process::{SYSCALL_CLONE, SYSCALL_EXIT};

@@ -13,7 +13,8 @@ use spin::Mutex;
 mod mm;
 mod pid_pool;
 
-use crate::{kernel::vm::AddressSpace, sys::task::*};
+use crate::kernel::vm::AddressSpace;
+pub use crate::sys::task::*;
 pub use mm::{TaskMmStruct, VmArea};
 pub use pid_pool::PidPool;
 

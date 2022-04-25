@@ -5,7 +5,8 @@ pub use crate::arch::keystone::frame::UserspaceRegs;
 #[repr(C)]
 #[derive(Default)]
 pub struct KtaskTls {
-    user_sp: usize,
+    // fork() needs to read this field.
+    pub user_sp: usize,
     kernel_sp: usize,
     // used by assembly code, should not be touched by Rust code
     prev_ktask_ctx: usize,
