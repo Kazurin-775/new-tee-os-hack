@@ -55,6 +55,23 @@ impl AddressSpace for UserAddressSpace {
         }
     }
 
+    fn set_current(&self) {
+        let cur_ppn = riscv::register::satp::read().ppn();
+        let my_ppn = self.virt2phys(self.inner.as_ptr().cast()) >> 12;
+        if cur_ppn != my_ppn {
+            log::debug!(
+                "Switching address space from {:#X} -> {:#X}",
+                cur_ppn,
+                my_ppn,
+            );
+            unsafe {
+                // TODO: assign an ASID
+                riscv::register::satp::set(riscv::register::satp::Mode::Sv39, 0, my_ppn);
+                riscv::asm::sfence_vma_all();
+            }
+        }
+    }
+
     fn alloc_map(&mut self, range: Range<usize>) {
         assert_eq!(range.start & 0xFFF, 0);
         assert_eq!(range.end & 0xFFF, 0);

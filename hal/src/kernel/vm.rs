@@ -2,6 +2,7 @@ use core::{alloc::Layout, ops::Range};
 
 pub trait AddressSpace {
     fn current() -> Self;
+    fn set_current(&self);
     fn alloc_map(&mut self, range: Range<usize>);
     fn virt2phys(&self, ptr: *const ()) -> usize;
     fn phys2virt(&self, addr: usize) -> *const ();

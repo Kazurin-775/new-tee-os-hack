@@ -157,6 +157,14 @@ impl<M: PageManager> RootPageTable<M> {
         pt1.entry(src.vpn0()).write(pte);
     }
 
+    pub fn inner(&self) -> PageTable {
+        self.inner
+    }
+
+    pub fn as_ptr(&self) -> *mut PageTableEntry {
+        self.inner.0
+    }
+
     pub fn into_manager(self) -> M {
         self.manager
     }

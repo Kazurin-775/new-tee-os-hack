@@ -13,7 +13,7 @@ use spin::Mutex;
 mod mm;
 mod pid_pool;
 
-use crate::sys::task::*;
+use crate::{kernel::vm::AddressSpace, sys::task::*};
 pub use mm::{TaskMmStruct, VmArea};
 pub use pid_pool::PidPool;
 
@@ -96,6 +96,8 @@ impl Future for TaskFuture {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        self.task.lock().mm.addr_space.set_current();
+
         // The scheduler's `KtaskCtx` (write only).
         let mut prev_ktask_ctx = MaybeUninit::uninit();
 
