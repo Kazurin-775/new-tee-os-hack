@@ -1,9 +1,9 @@
 // use `target_arch` to work around an issue of rust-analyzer
-#[cfg(all(target_arch = "riscv64", feature = "keystone"))]
+#[cfg(feature = "keystone")]
 pub mod keystone;
 
-#[cfg(all(target_arch = "x86_64", feature = "x86-vm"))]
+#[cfg(feature = "x86-vm")]
 pub mod x86_vm;
 
-#[cfg(all(target_arch = "x86_64", feature = "sgx"))]
+#[cfg(feature = "sgx")]
 pub mod sgx;
