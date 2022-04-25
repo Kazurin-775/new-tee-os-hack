@@ -1,7 +1,7 @@
 use alloc::collections::BTreeMap;
 use core::ops::Range;
 
-use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace};
+use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace, vm::ClonableAddressSpace};
 
 // TODO: decide whether addr_space should be Clone & Debug
 #[derive(Debug)]
@@ -75,6 +75,22 @@ impl TaskMmStruct {
             Some(vma)
         } else {
             None
+        }
+    }
+
+    pub fn duplicate(&self) -> TaskMmStruct {
+        let mut new_addr_space = self.addr_space.create_bare();
+
+        // TODO: walk the page table instead of VMAs
+        for (_start, vma) in &self.vmas {
+            new_addr_space.copy_from_current(vma.range.clone());
+        }
+        new_addr_space.copy_from_current(self.stack_zone.clone());
+
+        TaskMmStruct {
+            addr_space: new_addr_space,
+            vmas: self.vmas.clone(),
+            stack_zone: self.stack_zone.clone(),
         }
     }
 }

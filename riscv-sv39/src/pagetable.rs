@@ -77,6 +77,15 @@ impl PageTableEntry {
     }
 }
 
+impl core::fmt::Debug for PageTableEntry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("PageTableEntry")
+            .field(&self.is_valid())
+            .field(&self.ppn())
+            .finish()
+    }
+}
+
 impl PageTable {
     #[inline]
     unsafe fn entry(self, index: usize) -> *mut PageTableEntry {

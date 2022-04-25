@@ -4,7 +4,7 @@ use kconfig::*;
 use riscv_sv39::{PageManager, PageTableEntry, RootPageTable};
 pub use riscv_sv39::{PhysAddr, VirtAddr};
 
-use crate::vm::AddressSpace;
+use crate::vm::{AddressSpace, ClonableAddressSpace};
 
 #[derive(Clone, Copy)]
 pub struct HeapPageManager {
@@ -96,6 +96,42 @@ impl UserAddressSpace {
         unsafe {
             self.inner
                 .map_4k(virt, PageTableEntry::for_phys(phys).make_user().make_rwx());
+        }
+    }
+}
+
+impl ClonableAddressSpace for UserAddressSpace {
+    fn create_bare(&self) -> Self {
+        let old_rpt = self.inner.as_ptr();
+        let new_rpt = crate::vm::alloc_page() as *mut PageTableEntry;
+        log::debug!("Allocated new root page table at {:?}", new_rpt);
+
+        // Copy kernel mappings to the new page table
+        unsafe {
+            let src = core::slice::from_raw_parts(old_rpt.add(256), 256);
+            core::slice::from_raw_parts_mut(new_rpt.add(256), 256).copy_from_slice(src);
+        }
+
+        UserAddressSpace {
+            mem_mgr: self.mem_mgr,
+            inner: RootPageTable::new(new_rpt.cast(), self.mem_mgr),
+        }
+    }
+
+    fn copy_from_current(&mut self, range: Range<usize>) {
+        assert!((range.start & 0xFFF) == 0 && (range.end & 0xFFF) == 0);
+        for addr in range.step_by(0x1000) {
+            let page = crate::vm::alloc_page();
+            log::debug!("Copying page at {:#X} to VirtAddr({:?})", addr, page);
+            unsafe {
+                crate::mem::copy_from_user(
+                    core::slice::from_raw_parts_mut(page, 0x1000),
+                    addr as *const u8,
+                );
+            }
+            let phys = self.mem_mgr.virt2phys(VirtAddr::from_ptr(page));
+            // log::debug!("Mapping VirtAdr({:#X}) to {:?}", addr, phys);
+            self.map_single(VirtAddr(addr), phys);
         }
     }
 }
