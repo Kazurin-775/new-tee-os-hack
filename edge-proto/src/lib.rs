@@ -69,6 +69,13 @@ pub enum EdgeCallReq {
         path: String,
         flags: i32,
     },
+    PcbDup {
+        from: i32,
+        to: i32,
+    },
+    PcbDrop {
+        pid: i32,
+    },
     FileOpen {
         path: String,
     },

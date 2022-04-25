@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Mutex};
 
 use crate::fs_imp::TaskFsContext;
 
+#[derive(Clone)]
 pub struct RemoteTask {
     pub fs: TaskFsContext,
 }

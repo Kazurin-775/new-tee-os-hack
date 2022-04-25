@@ -1,5 +1,5 @@
+use edge_proto::EdgeCallReq;
 use hal::task::{Task, TaskFuture, UserspaceRegs};
-use log::*;
 
 use crate::Errno;
 
@@ -11,9 +11,23 @@ pub const SYSCALL_CLONE: SyscallHandler = SyscallHandler::SyscallClone(syscall_c
 const SIGCHLD: usize = 17;
 
 unsafe fn syscall_exit(retval: usize) -> isize {
-    debug!("U-mode program exited with status {}", retval);
+    let current = hal::task::current();
+    let mut cur_lock = current.lock();
+    let pid = cur_lock.pid;
+    log::debug!("PID {} exited with status {}", pid, retval);
+
+    // Drop PCB at the edge responder side
+    hal::edge::with_edge_caller(|caller| {
+        caller.write_header(&EdgeCallReq::PcbDrop { pid }).unwrap();
+        caller.kick().unwrap();
+        assert!(caller.read_header().unwrap().is_ok());
+    });
+
     // hal::exit_enclave(retval);
-    hal::task::current().lock().exited = true;
+    cur_lock.exited = true;
+    // Free the local variables, or they will cause deadlocks / resource leaks
+    drop(cur_lock);
+    drop(current);
     hal::task::yield_to_sched();
     unreachable!("trying to re-schedule an already terminated task")
 }
@@ -28,10 +42,32 @@ unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isi
         return Errno::EINVAL.as_neg_isize();
     }
 
-    let new_mm = hal::task::current().lock().mm.duplicate();
+    let (cur_pid, new_mm);
+    {
+        let current = hal::task::current();
+        let cur_lock = current.lock();
+        // Get current PID
+        cur_pid = cur_lock.pid;
+        // Clone the address space
+        new_mm = cur_lock.mm.duplicate();
+    }
+    // Create a new task
     let task = Task::create(new_mm, &regs);
     let pid = task.lock().pid;
     log::debug!("Created a new task with PID = {}", pid);
+    // Duplicate PCB at the edge responder side
+    hal::edge::with_edge_caller(|caller| {
+        caller
+            .write_header(&EdgeCallReq::PcbDup {
+                from: cur_pid,
+                to: pid,
+            })
+            .unwrap();
+        caller.kick().unwrap();
+        assert!(caller.read_header().unwrap().is_ok());
+    });
+    // Spawn the new task in the async executor
     executor::spawn(TaskFuture::new(task));
+
     pid as isize
 }

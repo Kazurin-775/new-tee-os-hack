@@ -92,6 +92,24 @@ pub fn handle_edge_call_req(
             let result = syscall_imp::unlinkat(stream, pid, dir_fd, path, flags);
             write_syscall_result(stream, result).context("write result")?;
         }
+        PcbDup { from, to } => {
+            let mut tasks = pcb::TASKS.lock().unwrap();
+            let new_pcb = tasks.get(&from).expect("no such PID?!").clone();
+            tasks.insert(to, new_pcb);
+            log::debug!("Cloned PCB from PID {} -> PID {}", from, to);
+            stream
+                .write_header(&EdgeCallResp::Ok)
+                .compat()
+                .context("write header")?;
+        }
+        PcbDrop { pid } => {
+            assert!(pcb::TASKS.lock().unwrap().remove(&pid).is_some());
+            log::debug!("Dropped PCB for PID {}", pid);
+            stream
+                .write_header(&EdgeCallResp::Ok)
+                .compat()
+                .context("write header")?;
+        }
         FileOpen { path } => {
             write_anyhow_result(
                 stream,
