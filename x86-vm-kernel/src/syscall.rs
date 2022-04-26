@@ -42,7 +42,9 @@ unsafe extern "C" fn handle_syscall(frame: *mut SyscallFrame) {
         Some(SyscallHandler::Syscall6(f)) => {
             result = f(arg0, arg1, arg2, arg3, arg4, arg5);
         }
-        Some(SyscallHandler::SyscallClone(f)) => todo!(),
+        Some(SyscallHandler::SyscallClone(f)) => {
+            result = f(&(*frame).to_child_regs(), arg0, arg1);
+        }
         None => panic!("unknown syscall number {}", nr),
     }
 
