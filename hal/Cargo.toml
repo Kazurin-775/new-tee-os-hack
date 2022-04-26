@@ -7,7 +7,14 @@ edition = "2021"
 # Keystone part
 keystone = ["kconfig/keystone", "multitasking", "riscv", "riscv-sv39"]
 # x86 VM part
-x86-vm = ["kconfig/x86-vm", "lazy_static", "postcard", "uart_16550", "x86_64"]
+x86-vm = [
+    "kconfig/x86-vm",
+    "lazy_static",
+    "multitasking",
+    "postcard",
+    "uart_16550",
+    "x86_64",
+]
 # SGX part
 sgx = ["kconfig/sgx", "sgx_types"]
 multitasking = []

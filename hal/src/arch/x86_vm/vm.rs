@@ -1,8 +1,9 @@
-use core::alloc::Layout;
+use core::{alloc::Layout, ops::Range};
 
-use crate::vm::AddressSpace;
+use crate::vm::{AddressSpace, ClonableAddressSpace};
 use x86_64::structures::paging::{
-    FrameAllocator, Mapper, OffsetPageTable, Page, PageTable, PageTableFlags, PhysFrame, Size4KiB,
+    page_table::PageTableEntry, FrameAllocator, Mapper, OffsetPageTable, Page, PageTable,
+    PageTableFlags, PhysFrame, Size4KiB,
 };
 pub use x86_64::{PhysAddr, VirtAddr};
 
@@ -94,6 +95,44 @@ impl UserAddressSpace {
                 )
                 .unwrap()
                 .flush();
+        }
+    }
+}
+
+impl ClonableAddressSpace for UserAddressSpace {
+    fn create_bare(&self) -> UserAddressSpace {
+        let old_rpt = self.rpt_ptr;
+        let new_rpt = crate::vm::alloc_page() as *mut PageTable;
+        log::debug!("Allocated new root page table at {:?}", new_rpt);
+        unsafe {
+            // Clear the new page table
+            (*new_rpt).zero();
+        }
+
+        // Copy kernel mappings to the new page table
+        unsafe {
+            let old_rpt = old_rpt as *const PageTableEntry;
+            let new_rpt = new_rpt as *mut PageTableEntry;
+            core::ptr::copy_nonoverlapping(old_rpt.add(256), new_rpt.add(256), 256);
+        }
+
+        UserAddressSpace { rpt_ptr: new_rpt }
+    }
+
+    fn copy_from_current(&mut self, range: Range<usize>) {
+        assert!((range.start & 0xFFF) == 0 && (range.end & 0xFFF) == 0);
+        for addr in range.step_by(0x1000) {
+            let page = crate::vm::alloc_page();
+            log::debug!("Copying page at {:#X} to VirtAddr({:?})", addr, page);
+            unsafe {
+                crate::mem::copy_from_user(
+                    core::slice::from_raw_parts_mut(page, 0x1000),
+                    addr as *const u8,
+                );
+            }
+            let phys = self.virt2phys(page.cast());
+            // log::debug!("Mapping VirtAddr({:#X}) to {:?}", addr, phys);
+            self.map_single(VirtAddr::new(addr as u64), PhysAddr::new(phys as u64));
         }
     }
 }
