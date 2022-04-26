@@ -35,6 +35,24 @@ impl AddressSpace for UserAddressSpace {
         }
     }
 
+    fn set_current(&self) {
+        let (cur_rpt_phys, flags) = x86_64::registers::control::Cr3::read();
+        let my_rpt_phys = self.virt2phys(self.rpt_ptr.cast());
+        if cur_rpt_phys.start_address().as_u64() as usize != my_rpt_phys {
+            log::debug!(
+                "Switching address space from {:?} -> {:#X}",
+                cur_rpt_phys.start_address(),
+                my_rpt_phys,
+            );
+            unsafe {
+                x86_64::registers::control::Cr3::write(
+                    PhysFrame::from_start_address(PhysAddr::new(my_rpt_phys as u64)).unwrap(),
+                    flags,
+                );
+            }
+        }
+    }
+
     fn alloc_map(&mut self, range: core::ops::Range<usize>) {
         assert_eq!(range.start & 0xFFF, 0);
         assert_eq!(range.end & 0xFFF, 0);

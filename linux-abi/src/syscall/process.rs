@@ -32,6 +32,7 @@ unsafe fn syscall_exit(retval: usize) -> isize {
     unreachable!("trying to re-schedule an already terminated task")
 }
 
+#[cfg(feature = "multitasking")]
 unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isize {
     if flags != SIGCHLD {
         log::warn!("clone() called with unsupported flags: {:#X}", flags);
@@ -70,4 +71,9 @@ unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isi
     executor::spawn(TaskFuture::new(task));
 
     pid as isize
+}
+
+#[cfg(not(feature = "multitasking"))]
+unsafe fn syscall_clone(_regs: &UserspaceRegs, _flags: usize, _stack: usize) -> isize {
+    panic!("clone() is not supported without `multitasking` feature");
 }

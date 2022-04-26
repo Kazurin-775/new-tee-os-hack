@@ -78,6 +78,7 @@ impl TaskMmStruct {
         }
     }
 
+    #[cfg(feature = "multitasking")]
     pub fn duplicate(&self) -> TaskMmStruct {
         let mut new_addr_space = self.addr_space.create_bare();
 

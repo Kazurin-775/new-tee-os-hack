@@ -16,5 +16,5 @@ default-features = false
 features = ["macros"]
 
 [features]
-multitasking = ["executor"]
+multitasking = ["executor", "hal/multitasking"]
 default = ["multitasking"]
