@@ -12,6 +12,8 @@ pub unsafe extern "C" fn handle_syscall(
     arg2: usize,
     nr: usize,
     arg3: usize,
+    arg4: usize,
+    arg5: usize,
 ) -> isize {
     let result;
 
@@ -31,9 +33,9 @@ pub unsafe extern "C" fn handle_syscall(
             result = f(arg0, arg1, arg2, arg3);
         }
         Some(SyscallHandler::Syscall6(f)) => {
-            todo!();
+            result = f(arg0, arg1, arg2, arg3, arg4, arg5);
         }
-        Some(SyscallHandler::SyscallClone(f)) => {
+        Some(SyscallHandler::SyscallClone(_f)) => {
             panic!("clone() is not supported on SGX");
         }
         None => panic!("unknown syscall number {}", nr),
@@ -47,7 +49,7 @@ pub unsafe extern "C" fn handle_syscall(
 #[no_mangle]
 pub extern "C" fn handle_syscall_exception(frame: *mut sgx_exception_info_t) -> int32_t {
     // get arguments from the frame
-    let (nr, arg0, arg1, arg2, arg3) = {
+    let (nr, arg0, arg1, arg2, arg3, arg4, arg5) = {
         let frame = unsafe { &*frame };
         (
             frame.cpu_context.rax as usize,
@@ -55,10 +57,12 @@ pub extern "C" fn handle_syscall_exception(frame: *mut sgx_exception_info_t) -> 
             frame.cpu_context.rsi as usize,
             frame.cpu_context.rdx as usize,
             frame.cpu_context.r10 as usize,
+            frame.cpu_context.r8 as usize,
+            frame.cpu_context.r9 as usize,
         )
     };
     let nr = nr.try_into().unwrap();
-    let result = unsafe { handle_syscall(arg0, arg1, arg2, nr, arg3) };
+    let result = unsafe { handle_syscall(arg0, arg1, arg2, nr, arg3, arg4, arg5) };
 
     unsafe {
         // write return value back to the frame

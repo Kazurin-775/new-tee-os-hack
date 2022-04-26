@@ -16,22 +16,31 @@ syscall_entry:
     push    r10
     push    r11
 
-    # construct C ABI arguments
-    mov     rcx, rax
-    mov     r8, r10
-
-    # Note: no need to align `rsp` now, since `rsp` is already aligned at
-    # 16 bytes during `syscall_entry`, and we're pushing an even number of
-    # items onto the stack.
+    # IMPORTANT: align `rsp` to 16 bytes boundary
     #
     # According to https://ropemporium.com/guide.html :
     #
     # > The 64 bit calling convention requires the stack to be 16-byte aligned
     # > before a `call` instruction.
+    #
+    # Since we'll push an odd number of items in the stack, we just subtract 8
+    # from `rsp`.
+    sub     rsp, 8
+
+    # construct C ABI arguments
+    # From: (rdi rsi rdx rax r10 r8  r9   )
+    # To:   (rdi rsi rdx rcx r8  r9  stack)
+    mov     rcx, rax
+    push    r9
+    mov     r9, r8
+    mov     r8, r10
 
     # jump to Rust code
     call    handle_syscall
     # the return value is stored in rax
+
+    # // pop r9 and the alignment from the stack
+    add     rsp, 16
 
     # restore registers
     pop     r11
