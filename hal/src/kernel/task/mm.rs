@@ -1,7 +1,9 @@
 use alloc::collections::BTreeMap;
 use core::ops::Range;
 
-use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace, vm::ClonableAddressSpace};
+use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace};
+#[cfg(feature = "multitasking")]
+use crate::vm::ClonableAddressSpace;
 
 // TODO: decide whether addr_space should be Clone & Debug
 #[derive(Debug)]

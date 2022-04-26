@@ -1,14 +1,10 @@
 use edge_proto::EdgeCallReq;
-use hal::task::{Task, TaskFuture, UserspaceRegs};
-
-use crate::Errno;
+use hal::task::UserspaceRegs;
 
 use super::SyscallHandler;
 
 pub const SYSCALL_EXIT: SyscallHandler = SyscallHandler::Syscall1(syscall_exit);
 pub const SYSCALL_CLONE: SyscallHandler = SyscallHandler::SyscallClone(syscall_clone);
-
-const SIGCHLD: usize = 17;
 
 unsafe fn syscall_exit(retval: usize) -> isize {
     let current = hal::task::current();
@@ -34,6 +30,11 @@ unsafe fn syscall_exit(retval: usize) -> isize {
 
 #[cfg(feature = "multitasking")]
 unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isize {
+    use hal::task::{Task, TaskFuture};
+    use crate::Errno;
+
+    const SIGCHLD: usize = 17;
+
     if flags != SIGCHLD {
         log::warn!("clone() called with unsupported flags: {:#X}", flags);
         return Errno::EINVAL.as_neg_isize();
