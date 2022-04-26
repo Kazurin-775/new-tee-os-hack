@@ -30,6 +30,12 @@ pub unsafe extern "C" fn handle_syscall(
         Some(SyscallHandler::Syscall4(f)) => {
             result = f(arg0, arg1, arg2, arg3);
         }
+        Some(SyscallHandler::Syscall6(f)) => {
+            todo!();
+        }
+        Some(SyscallHandler::SyscallClone(f)) => {
+            panic!("clone() is not supported on SGX");
+        }
         None => panic!("unknown syscall number {}", nr),
     }
 

@@ -41,8 +41,14 @@ ktask_leave:
     jmp     ktask_enter
 
 ret_from_fork:
-    # save kernel stack & load user stack
-    xchg    gs:[0x10], rsp
+    # save kernel stack
+    mov     gs:[0x10], rsp
+
+    # load user entry & stack
+    # Sadly, we have to use a scratch register to store the entry point,
+    # since SGX doesn't have something like `iret`.
+    pop     rax
+    pop     rsp
 
     # return to user!
-    jmp     rbx     # rip
+    jmp     rax

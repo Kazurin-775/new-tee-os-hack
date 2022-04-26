@@ -16,7 +16,7 @@ x86-vm = [
     "x86_64",
 ]
 # SGX part
-sgx = ["kconfig/sgx", "sgx_types"]
+sgx = ["kconfig/sgx", "sgx_alloc", "sgx_types"]
 multitasking = []
 default = []
 
@@ -43,4 +43,5 @@ uart_16550 = { version = "0.2.17", optional = true }
 x86_64 = { version = "0.14.9", optional = true }
 
 # SGX related things
+sgx_alloc = { git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
 sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }

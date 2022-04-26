@@ -1,7 +1,12 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 
-use hal::edge::EdgeFile;
+use hal::{
+    arch::sgx::{frame::UserspaceRegs, vm::UserAddressSpace},
+    edge::EdgeFile,
+    task::{Task, TaskFuture, TaskMmStruct},
+    vm::AddressSpace,
+};
 use sgx_types::sgx_status_t;
 
 extern crate alloc;
@@ -80,11 +85,18 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
 
     // Switch to user context and call ELF's main()
     let elf_main = elf_file.entry() as usize + rsrv_base as usize;
-    let task = hal::task::Task::create(user_stack_begin as usize + 0x4000);
-    // Hack: write the entry point to rbx (used by `ret_from_fork`)
-    task.lock().ktask_ctx.as_mut().unwrap().rbx = elf_main;
+    let addr_space = UserAddressSpace::current();
+    let user_stack_begin = user_stack_begin as usize;
+    let mut mm = TaskMmStruct::new(addr_space, user_stack_begin..user_stack_begin + 0x4000);
+    let task = Task::create(
+        mm,
+        &UserspaceRegs {
+            rsp: user_stack_begin + 0x4000,
+            rip: elf_main,
+        },
+    );
 
-    let task_future = hal::task::TaskFuture::new(task);
+    let task_future = TaskFuture::new(task);
     executor::spawn(task_future);
     executor::run_until_idle();
 

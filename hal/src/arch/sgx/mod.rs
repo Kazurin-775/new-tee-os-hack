@@ -1,5 +1,8 @@
 use sgx_types::sgx_status_t;
 
+pub mod frame;
+pub mod vm;
+
 pub unsafe fn initialize_edge_caller(utm_base: *mut u8) {
     crate::sys::edge::initialize_edge_caller(utm_base);
 }
