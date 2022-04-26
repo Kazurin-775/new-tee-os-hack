@@ -4,7 +4,7 @@
 use hal::{
     arch::sgx::{frame::UserspaceRegs, vm::UserAddressSpace},
     edge::EdgeFile,
-    task::{Task, TaskFuture, TaskMmStruct},
+    task::{Task, TaskFuture, TaskMmStruct, VmArea},
     vm::AddressSpace,
 };
 use sgx_types::sgx_status_t;
@@ -53,6 +53,21 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
     let (rsrv_base, _rsrv_size) = heap::query_rsrv_mem();
     assert!(!rsrv_base.is_null());
 
+    // Allocate user stack.
+    let user_stack_begin = unsafe {
+        alloc::alloc::alloc(alloc::alloc::Layout::from_size_align_unchecked(
+            0x4000, 0x1000,
+        ))
+    };
+    assert!(!user_stack_begin.is_null());
+    log::debug!("Allocated user stack at {:?}", user_stack_begin);
+
+    // Create memory management struct.
+    // Warning: the stack zone is not owned by the task!
+    let user_stack_begin = user_stack_begin as usize;
+    let addr_space = UserAddressSpace::current();
+    let mut mm = TaskMmStruct::new(addr_space, user_stack_begin..user_stack_begin + 0x4000);
+
     // Load sgx-init as an ELF file
     let mut edge_file = elf::EdgeElfFile(EdgeFile::open("sgx-init"));
     let elf_file = elf_loader::ElfFile::new(&mut edge_file, elf_loader::arch::X86_64);
@@ -64,30 +79,18 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
             size,
             placement,
         );
-        let result_addr = unsafe {
-            sgx_alloc::rsrvmem::alloc_with_addr(
-                placement as *mut u8,
-                u32::try_from(size / kconfig::PAGE_SIZE).unwrap(),
-            )
-        };
-        assert_eq!(result_addr as usize, placement);
-        result_addr
+        mm.addr_space.alloc_map(placement..placement + size);
+        mm.vmas.insert(
+            placement,
+            VmArea {
+                range: placement..placement + size,
+            },
+        );
+        placement as *mut u8
     });
-
-    // Allocate user stack
-    let user_stack_begin = unsafe {
-        alloc::alloc::alloc(alloc::alloc::Layout::from_size_align_unchecked(
-            0x4000, 0x1000,
-        ))
-    };
-    assert!(!user_stack_begin.is_null());
-    log::debug!("Allocated user stack at {:?}", user_stack_begin);
 
     // Switch to user context and call ELF's main()
     let elf_main = elf_file.entry() as usize + rsrv_base as usize;
-    let addr_space = UserAddressSpace::current();
-    let user_stack_begin = user_stack_begin as usize;
-    let mut mm = TaskMmStruct::new(addr_space, user_stack_begin..user_stack_begin + 0x4000);
     let task = Task::create(
         mm,
         &UserspaceRegs {
