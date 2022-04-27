@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 use edge_proto::EdgeCallReq;
 use hal::task::UserspaceRegs;
 
@@ -82,19 +82,53 @@ unsafe fn syscall_clone(_regs: &UserspaceRegs, _flags: usize, _stack: usize) -> 
 }
 
 #[cfg(feature = "multitasking")]
-unsafe fn syscall_execve_pre(path: usize) -> Result<String, isize> {
+unsafe fn syscall_execve_pre(
+    path: usize,
+    mut argv_ptr: usize,
+    mut envp_ptr: usize,
+) -> Result<(String, Vec<String>, Vec<String>), isize> {
     let mut path_buf = alloc::vec![0; crate::limits::PATH_MAX];
-    let path_len = hal::mem::strncpy_from_user(&mut path_buf, path as *const u8);
-    if path_len >= path_buf.len() {
-        log::error!("mkdirat: Path buffer overflow");
-        return Err(crate::Errno::EFAULT.as_neg_isize());
-    }
-    let path = core::str::from_utf8(&path_buf[0..path_len]).expect("path is not valid UTF-8");
 
-    Ok(String::from(path))
+    let mut read_string_from_user = |ptr: *const u8| -> Result<String, isize> {
+        let path_len = hal::mem::strncpy_from_user(&mut path_buf, ptr);
+        if path_len >= path_buf.len() {
+            log::error!("execve: Path buffer overflow");
+            return Err(crate::Errno::EFAULT.as_neg_isize());
+        }
+        Ok(String::from(
+            core::str::from_utf8(&path_buf[0..path_len]).expect("invalid UTF-8"),
+        ))
+    };
+
+    // Read path, argv, envp
+    let path = read_string_from_user(path as *const u8)?;
+    let mut argv = Vec::new();
+    loop {
+        let ptr = hal::mem::read_from_user(argv_ptr as *const *const u8);
+        if ptr.is_null() {
+            break;
+        }
+        argv.push(read_string_from_user(ptr)?);
+        argv_ptr += core::mem::size_of::<usize>();
+    }
+    let mut envp = Vec::new();
+    loop {
+        let ptr = hal::mem::read_from_user(envp_ptr as *const *const u8);
+        if ptr.is_null() {
+            break;
+        }
+        envp.push(read_string_from_user(ptr)?);
+        envp_ptr += core::mem::size_of::<usize>();
+    }
+
+    Ok((path, argv, envp))
 }
 
 #[cfg(not(feature = "multitasking"))]
-unsafe fn syscall_execve_pre(_path: usize) -> Result<String, isize> {
+unsafe fn syscall_execve_pre(
+    _path: usize,
+    _argv: usize,
+    _envp: usize,
+) -> Result<(String, Vec<String>, Vec<String>), isize> {
     panic!("execve() is not supported without `multitasking` feature");
 }

@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 use hal::task::UserspaceRegs;
 
 mod dir;
@@ -16,7 +16,9 @@ pub enum SyscallHandler {
     Syscall4(unsafe fn(usize, usize, usize, usize) -> isize),
     Syscall6(unsafe fn(usize, usize, usize, usize, usize, usize) -> isize),
     SyscallClone(unsafe fn(&UserspaceRegs, usize, usize) -> isize),
-    SyscallExecvePre(unsafe fn(usize) -> Result<String, isize>),
+    SyscallExecvePre(
+        unsafe fn(usize, usize, usize) -> Result<(String, Vec<String>, Vec<String>), isize>,
+    ),
 }
 
 #[macro_export]

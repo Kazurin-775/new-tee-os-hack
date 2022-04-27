@@ -46,9 +46,9 @@ unsafe extern "C" fn handle_syscall(frame: *mut SyscallFrame) {
             result = f(&(*frame).to_child_regs(), arg0, arg1);
         }
         Some(SyscallHandler::SyscallExecvePre(f)) => {
-            match f(arg0) {
-                Ok(path) => {
-                    crate::exec::do_execve(path);
+            match f(arg0, arg1, arg2) {
+                Ok((path, argv, envp)) => {
+                    crate::exec::do_execve(path, argv, envp);
                     hal::task::yield_to_sched();
                     unreachable!()
                     // no need to update result value

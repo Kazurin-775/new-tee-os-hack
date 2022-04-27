@@ -23,14 +23,17 @@ pub struct ExecData {
     pub user_sp: usize,
 }
 
-pub fn exec_within(
+pub fn exec_within<S>(
     addr_space: UserAddressSpace,
     path: &str,
-    argv: &[&str],
-    envp: &[&str],
+    argv: &[S],
+    envp: &[S],
     arch: impl elf_loader::arch::ElfArch,
     mut mapper: impl FnMut(&mut TaskMmStruct, *const (), usize, usize),
-) -> ExecData {
+) -> ExecData
+where
+    S: AsRef<str>,
+{
     let mut mm = TaskMmStruct::new(
         addr_space,
         hal::cfg::USER_STACK_END - hal::cfg::USER_STACK_SIZE..hal::cfg::USER_STACK_END,

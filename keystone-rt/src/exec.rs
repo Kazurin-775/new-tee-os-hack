@@ -1,19 +1,24 @@
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 use hal::{
     task::UserspaceRegs,
     vm::{AddressSpace, ClonableAddressSpace, UserAddressSpace},
 };
 use riscv_sv39::{PhysAddr, VirtAddr};
 
-pub fn do_execve(path: String) {
-    log::debug!("execve: Replacing current task with {}", path);
+pub fn do_execve(path: String, argv: Vec<String>, envp: Vec<String>) {
+    log::debug!(
+        "execve: Replacing current task with {}, argv = {:?}, envp = {:?}",
+        path,
+        argv,
+        envp,
+    );
 
     let addr_space = UserAddressSpace::current().create_bare();
     let exec_data = linux_abi::elf::exec_within(
         addr_space,
         &path,
-        linux_abi::exec::INIT_ARGV, // TODO
-        linux_abi::exec::INIT_ENVP, // TODO
+        &argv,
+        &envp,
         elf_loader::arch::RiscV,
         |mm, from, size, to| {
             let from = from as usize;

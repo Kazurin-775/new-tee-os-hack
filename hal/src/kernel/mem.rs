@@ -42,3 +42,13 @@ pub unsafe fn strncpy_from_user(kernel_mem: &mut [u8], user_mem: *const u8) -> u
 
     effective_len
 }
+
+pub unsafe fn read_from_user<T>(user_mem: *const T) -> T
+where
+    T: Copy,
+{
+    user_access_begin();
+    let result = user_mem.read();
+    user_access_end();
+    result
+}
