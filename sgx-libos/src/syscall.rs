@@ -38,6 +38,9 @@ pub unsafe extern "C" fn handle_syscall(
         Some(SyscallHandler::SyscallClone(_f)) => {
             panic!("clone() is not supported on SGX");
         }
+        Some(SyscallHandler::SyscallExecvePre(_f)) => {
+            panic!("execve() is not supported on SGX");
+        }
         None => panic!("unknown syscall number {}", nr),
     }
 
