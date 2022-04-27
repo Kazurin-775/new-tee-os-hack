@@ -6,12 +6,10 @@ extern crate alloc;
 
 use hal::{
     arch::keystone::{frame::UserspaceRegs, vm::UserAddressSpace},
-    edge::EdgeFile,
-    task::{Task, TaskFuture, TaskMmStruct, VmArea},
+    task::{Task, TaskFuture},
     vm::AddressSpace,
 };
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
-use log::debug;
 use riscv_sv39::{PhysAddr, VirtAddr};
 
 mod elf;
@@ -39,23 +37,15 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
     log::debug!("It did not crash!");
 
     // load U-mode program
-    let entry;
+    log::debug!("Run keystone-init as init process");
     let addr_space = UserAddressSpace::current();
-    let mut mm = TaskMmStruct::new(
+    let exec_data = linux_abi::elf::exec_within(
         addr_space,
-        hal::cfg::USER_STACK_END - 0x1_000..hal::cfg::USER_STACK_END,
-    );
-    {
-        // open ELF file
-        let mut elf_file = elf::EdgeElfFile(EdgeFile::open("keystone-init"));
-
-        // load & map ELF file
-        let elf = elf_loader::ElfFile::new(&mut elf_file, elf_loader::arch::RiscV);
-        elf.load_mapped(&mut elf_file, |from, size, to| {
-            debug!(
-                "ELF loader: mapping ({:?} + {:#X}) -> {:#X}",
-                from, size, to
-            );
+        "keystone-init",
+        linux_abi::exec::INIT_ARGV,
+        linux_abi::exec::INIT_ENVP,
+        elf_loader::arch::RiscV,
+        |mm, from, size, to| {
             let from = from as usize;
             for i in 0..(size + 0xFFF) >> 12 {
                 mm.addr_space.map_single(
@@ -63,40 +53,15 @@ extern "C" fn rt_main(vm_info: &vm::VmInfo) -> ! {
                     PhysAddr(mm.addr_space.virt2phys((from + (i << 12)) as *const ())),
                 );
             }
-            // map the section to TaskMmStruct
-            // TODO: create an abstraction
-            mm.vmas.insert(
-                to,
-                VmArea {
-                    range: to..to + ((size + 0xFFF) & !0xFFF),
-                },
-            );
-        });
-        entry = elf.entry() as usize;
-
-        // map an extra page for the initial stack
-        // TODO: this should be done by TaskMmStruct
-        mm.addr_space.alloc_map(mm.stack_zone.clone());
-    }
-
-    // Copy argv and envp to the user stack's end
-    let (user_stack_data, user_sp) = linux_abi::exec::prepare_user_stack_data(
-        hal::cfg::USER_STACK_END,
-        &linux_abi::exec::INIT_ARGV,
-        &linux_abi::exec::INIT_ENVP,
+        },
     );
-    assert!(user_stack_data.len() < 0x1_000);
-    unsafe {
-        hal::mem::copy_to_user(&user_stack_data, user_sp as *mut u8);
-    }
 
-    log::debug!("Run keystone-init as init process");
     let userspace_regs = UserspaceRegs {
-        sp: user_sp,
-        sepc: entry,
+        sp: exec_data.user_sp,
+        sepc: exec_data.entry,
         ..Default::default()
     };
-    let task = Task::create(mm, &userspace_regs);
+    let task = Task::create(exec_data.mm, &userspace_regs);
     let task_future = TaskFuture::new(task);
 
     // execute U-mode program

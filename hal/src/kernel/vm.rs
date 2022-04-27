@@ -1,5 +1,7 @@
 use core::{alloc::Layout, ops::Range};
 
+pub use crate::sys::vm::*;
+
 pub trait AddressSpace {
     fn current() -> Self;
     fn set_current(&self);

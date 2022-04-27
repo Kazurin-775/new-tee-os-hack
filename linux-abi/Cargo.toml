@@ -5,6 +5,7 @@ edition = "2018"
 
 [dependencies]
 edge-proto = { path = "../edge-proto" }
+elf-loader = { path = "../elf-loader", optional = true }
 executor = { git = "https://github.com/rcore-os/executor.git", rev = "04b6b7b", optional = true }
 hal = { path = "../hal" }
 log = "0.4.16"
@@ -16,5 +17,5 @@ default-features = false
 features = ["macros"]
 
 [features]
-multitasking = ["executor", "hal/multitasking"]
+multitasking = ["elf-loader", "executor", "hal/multitasking"]
 default = ["multitasking"]

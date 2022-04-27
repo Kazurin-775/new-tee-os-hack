@@ -2,9 +2,11 @@
 
 extern crate alloc;
 
+#[cfg(feature = "multitasking")]
+pub mod elf;
 mod errno;
 pub mod exec;
-pub mod syscall;
 pub mod limits;
+pub mod syscall;
 
 pub use errno::Errno;

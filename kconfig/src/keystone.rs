@@ -9,6 +9,7 @@ pub const KERNEL_UTM_BASE: usize = 0xFFFF_FFFF_8000_0000;
 // This is one byte past the last U-mode byte; in Sv39, it's (1 << 38).
 // This is also the first "non-canonical" virtual address.
 pub const USER_STACK_END: usize = 0x40_0000_0000;
+pub const USER_STACK_SIZE: usize = 0x1_000;
 
 pub const KERNEL_STACK_SIZE: usize = 0x4_000;
 

@@ -11,6 +11,7 @@ pub const USER_BASE: usize = 0x40_0000;
 // in Linux, this is one byte past the last address in userspace
 // (not a canonical virtual address in fact)
 pub const USER_STACK_END: usize = 0x8000_0000_0000;
+pub const USER_STACK_SIZE: usize = 0x1_000;
 
 pub const KERNEL_STACK_SIZE: usize = 0x4_000;
 
