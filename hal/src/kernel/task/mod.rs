@@ -81,6 +81,20 @@ impl Task {
         task.lock().tls.set_pcb_weak_ptr(pcb_weak_ptr as usize);
         task
     }
+
+    // Reinitialize the current task
+    pub fn replace(&mut self, mm: TaskMmStruct, userspace_regs: &UserspaceRegs) {
+        // TODO: free memory
+        self.mm = mm;
+        let userspace_regs = unsafe {
+            core::slice::from_raw_parts(
+                userspace_regs as *const _ as *const u8,
+                core::mem::size_of::<UserspaceRegs>(),
+            )
+        };
+        // Reallocate user stack & prepare `ret_from_fork`.
+        self.ktask_ctx = Some(KtaskCtx::allocate_for(self.tls.as_ref(), userspace_regs));
+    }
 }
 
 pub struct TaskFuture {
@@ -116,16 +130,16 @@ impl Future for TaskFuture {
             ktask_enter(prev_ktask_ctx.as_mut_ptr(), &mut next_ktask_ctx);
         }
 
-        // `next_ktask_ctx` is now modified, return it to the Task's `KtaskCtx`.
-        assert!(self
-            .task
-            .try_lock()
-            .unwrap()
-            .ktask_ctx
-            .replace(next_ktask_ctx)
-            .is_none());
+        let mut task_guard = self.task.try_lock().unwrap();
+        if let Some(_) = &task_guard.ktask_ctx {
+            // The task's context has been replaced by exec().
+            log::debug!("Applying new KtaskCtx to PID {}", task_guard.pid);
+        } else {
+            // `next_ktask_ctx` is now modified, return it to the Task's `KtaskCtx`.
+            task_guard.ktask_ctx = Some(next_ktask_ctx);
+        }
 
-        if self.task.lock().exited {
+        if task_guard.exited {
             // Terminate the current async task.
             Poll::Ready(())
         } else {

@@ -4,7 +4,7 @@
 
 extern crate alloc;
 
-mod elf;
+mod exec;
 mod frame;
 mod heap;
 mod interrupt;

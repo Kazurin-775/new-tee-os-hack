@@ -1,3 +1,4 @@
+use alloc::string::String;
 use edge_proto::EdgeCallReq;
 use hal::task::UserspaceRegs;
 
@@ -5,6 +6,7 @@ use super::SyscallHandler;
 
 pub const SYSCALL_EXIT: SyscallHandler = SyscallHandler::Syscall1(syscall_exit);
 pub const SYSCALL_CLONE: SyscallHandler = SyscallHandler::SyscallClone(syscall_clone);
+pub const SYSCALL_EXECVE_PRE: SyscallHandler = SyscallHandler::SyscallExecvePre(syscall_execve_pre);
 
 unsafe fn syscall_exit(retval: usize) -> isize {
     let current = hal::task::current();
@@ -30,8 +32,8 @@ unsafe fn syscall_exit(retval: usize) -> isize {
 
 #[cfg(feature = "multitasking")]
 unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isize {
-    use hal::task::{Task, TaskFuture};
     use crate::Errno;
+    use hal::task::{Task, TaskFuture};
 
     const SIGCHLD: usize = 17;
 
@@ -77,4 +79,22 @@ unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isi
 #[cfg(not(feature = "multitasking"))]
 unsafe fn syscall_clone(_regs: &UserspaceRegs, _flags: usize, _stack: usize) -> isize {
     panic!("clone() is not supported without `multitasking` feature");
+}
+
+#[cfg(feature = "multitasking")]
+unsafe fn syscall_execve_pre(path: usize) -> Result<String, isize> {
+    let mut path_buf = alloc::vec![0; crate::limits::PATH_MAX];
+    let path_len = hal::mem::strncpy_from_user(&mut path_buf, path as *const u8);
+    if path_len >= path_buf.len() {
+        log::error!("mkdirat: Path buffer overflow");
+        return Err(crate::Errno::EFAULT.as_neg_isize());
+    }
+    let path = core::str::from_utf8(&path_buf[0..path_len]).expect("path is not valid UTF-8");
+
+    Ok(String::from(path))
+}
+
+#[cfg(not(feature = "multitasking"))]
+unsafe fn syscall_execve_pre(_path: usize) -> Result<String, isize> {
+    panic!("execve() is not supported without `multitasking` feature");
 }

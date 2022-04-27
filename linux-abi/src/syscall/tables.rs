@@ -23,6 +23,7 @@ pub static TABLE_GENERIC: Map<u32, SyscallHandler> = phf_map! {
     93u32 => SYSCALL_EXIT,
     215u32 => SYSCALL_MUNMAP,
     220u32 => SYSCALL_CLONE,
+    221u32 => SYSCALL_EXECVE_PRE,
     222u32 => SYSCALL_MMAP,
 };
 
@@ -36,6 +37,7 @@ pub static TABLE_X86_64: Map<u32, SyscallHandler> = phf_map! {
     11u32 => SYSCALL_MUNMAP,
     32u32 => SYSCALL_DUP,
     56u32 => SYSCALL_CLONE,
+    59u32 => SYSCALL_EXECVE_PRE,
     60u32 => SYSCALL_EXIT,
     79u32 => SYSCALL_GETCWD,
     80u32 => SYSCALL_CHDIR,

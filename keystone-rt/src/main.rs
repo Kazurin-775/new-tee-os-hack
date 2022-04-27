@@ -12,8 +12,8 @@ use hal::{
 use kmalloc::{Kmalloc, LockedLinkedListHeap};
 use riscv_sv39::{PhysAddr, VirtAddr};
 
-mod elf;
 mod entry;
+mod exec;
 mod frame;
 mod klog;
 mod panic;

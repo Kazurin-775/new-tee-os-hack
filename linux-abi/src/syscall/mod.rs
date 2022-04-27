@@ -1,3 +1,4 @@
+use alloc::string::String;
 use hal::task::UserspaceRegs;
 
 mod dir;
@@ -15,6 +16,7 @@ pub enum SyscallHandler {
     Syscall4(unsafe fn(usize, usize, usize, usize) -> isize),
     Syscall6(unsafe fn(usize, usize, usize, usize, usize, usize) -> isize),
     SyscallClone(unsafe fn(&UserspaceRegs, usize, usize) -> isize),
+    SyscallExecvePre(unsafe fn(usize) -> Result<String, isize>),
 }
 
 #[macro_export]
