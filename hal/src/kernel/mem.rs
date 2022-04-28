@@ -52,3 +52,12 @@ where
     user_access_end();
     result
 }
+
+pub unsafe fn write_to_user<T>(user_mem: *mut T, value: T)
+where
+    T: Copy,
+{
+    user_access_begin();
+    user_mem.write(value);
+    user_access_end();
+}

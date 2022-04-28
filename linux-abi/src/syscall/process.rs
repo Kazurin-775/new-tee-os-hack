@@ -25,7 +25,7 @@ unsafe fn syscall_exit(retval: usize) -> isize {
         assert!(caller.read_header().unwrap().is_ok());
     });
 
-    cur_lock.exited = true;
+    cur_lock.exit_status = Some(retval as i32);
 
     // Signal the parent process if it is waiting for us.
     if let Some(parent) = cur_lock.parent.upgrade() {
@@ -45,7 +45,7 @@ unsafe fn syscall_exit(retval: usize) -> isize {
     unreachable!("trying to re-schedule an already terminated task")
 }
 
-unsafe fn syscall_wait4(pid: usize, _status_ptr: usize, options: usize, rusage: usize) -> isize {
+unsafe fn syscall_wait4(pid: usize, status_ptr: usize, options: usize, rusage: usize) -> isize {
     if pid != usize::max_value() {
         log::error!("wait4: Waiting for arbitrary PID {} is not supported", pid);
         return -1;
@@ -62,9 +62,14 @@ unsafe fn syscall_wait4(pid: usize, _status_ptr: usize, options: usize, rusage: 
         let mut cur_lock = current.try_lock().unwrap();
         cur_lock.waiting = false;
         if let Some(zombie) = cur_lock.wait_queue.pop_zombie() {
-            let pid = zombie.lock().pid;
-            log::debug!("Reaped zombie PID = {}", pid);
-            // TODO: write exit value
+            let zombie_guard = zombie.try_lock().unwrap();
+            let pid = zombie_guard.pid;
+            let exit_status = zombie_guard.exit_status.unwrap();
+            log::debug!("Reaped zombie PID = {}, exit status = {}", pid, exit_status);
+            // Write exit status
+            if status_ptr != 0 {
+                hal::mem::write_to_user(status_ptr as *mut i32, exit_status);
+            }
             break pid as isize;
         }
 

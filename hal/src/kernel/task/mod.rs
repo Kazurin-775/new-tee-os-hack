@@ -26,7 +26,7 @@ pub static PID_POOL: Mutex<PidPool> = Mutex::new(PidPool::new());
 
 pub struct Task {
     pub pid: Pid,
-    pub exited: bool,
+    pub exit_status: Option<i32>,
     /// A weak reference to the parent process. Defaults to a dangling pointer.
     pub parent: Weak<Mutex<Task>>,
     /// A simple wait queue, used by wait().
@@ -76,7 +76,7 @@ impl Task {
         let ktask_ctx = Some(KtaskCtx::allocate_for(tls.as_ref(), userspace_regs));
         let task = Task {
             pid,
-            exited: false,
+            exit_status: None,
             parent: Weak::new(),
             wait_queue: WaitQueue::new(),
             waiting: false,
@@ -153,7 +153,7 @@ impl Future for TaskFuture {
             task_guard.ktask_ctx = Some(next_ktask_ctx);
         }
 
-        if task_guard.exited {
+        if task_guard.exit_status.is_some() {
             // Terminate the current async task.
             Poll::Ready(())
         } else if task_guard.waiting {
