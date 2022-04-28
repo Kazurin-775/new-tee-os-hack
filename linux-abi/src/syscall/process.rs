@@ -5,6 +5,7 @@ use hal::task::UserspaceRegs;
 use super::SyscallHandler;
 
 pub const SYSCALL_EXIT: SyscallHandler = SyscallHandler::Syscall1(syscall_exit);
+pub const SYSCALL_WAIT4: SyscallHandler = SyscallHandler::Syscall4(syscall_wait4);
 pub const SYSCALL_GETPID: SyscallHandler = SyscallHandler::Syscall0(syscall_getpid);
 pub const SYSCALL_GETPPID: SyscallHandler = SyscallHandler::Syscall0(syscall_getppid);
 pub const SYSCALL_SCHED_YIELD: SyscallHandler = SyscallHandler::Syscall0(syscall_sched_yield);
@@ -24,13 +25,54 @@ unsafe fn syscall_exit(retval: usize) -> isize {
         assert!(caller.read_header().unwrap().is_ok());
     });
 
-    // hal::exit_enclave(retval);
     cur_lock.exited = true;
+
+    // Signal the parent process if it is waiting for us.
+    if let Some(parent) = cur_lock.parent.upgrade() {
+        let mut parent_guard = parent.lock();
+        if parent_guard.waiting {
+            log::debug!("Waking up parent process {}", parent_guard.pid);
+            parent_guard.wait_queue.signal_child_exit(pid);
+        }
+    }
+
     // Free the local variables, or they will cause deadlocks / resource leaks
     drop(cur_lock);
     drop(current);
+
+    // hal::exit_enclave(retval);
     hal::task::yield_to_sched();
     unreachable!("trying to re-schedule an already terminated task")
+}
+
+unsafe fn syscall_wait4(pid: usize, _status_ptr: usize, options: usize, rusage: usize) -> isize {
+    if pid != usize::max_value() {
+        log::error!("wait4: Waiting for arbitrary PID {} is not supported", pid);
+        return -1;
+    }
+    if options != 0 {
+        log::warn!("wait4: Non-zero options {:#X} are not supported", options);
+    }
+    if rusage != 0 {
+        log::warn!("wait4: rusage is not supported (got {:#X})", rusage);
+    }
+
+    let current = hal::task::current();
+    loop {
+        let mut cur_lock = current.try_lock().unwrap();
+        cur_lock.waiting = false;
+        if let Some(zombie) = cur_lock.wait_queue.pop_zombie() {
+            let pid = zombie.lock().pid;
+            log::debug!("Reaped zombie PID = {}", pid);
+            // TODO: write exit value
+            break pid as isize;
+        }
+
+        log::debug!("PID {} waiting for child processes", cur_lock.pid);
+        cur_lock.waiting = true;
+        drop(cur_lock);
+        hal::task::yield_to_sched();
+    }
 }
 
 unsafe fn syscall_getpid() -> isize {
@@ -74,19 +116,21 @@ unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isi
     }
 
     let current = hal::task::current();
-    let (cur_pid, new_mm);
-    {
-        let cur_lock = current.lock();
-        // Get current PID
-        cur_pid = cur_lock.pid;
-        // Clone the address space
-        new_mm = cur_lock.mm.duplicate();
-    }
+    let mut cur_lock = current.lock();
+    // Get current PID
+    let cur_pid = cur_lock.pid;
+    // Clone the address space
+    let new_mm = cur_lock.mm.duplicate();
+
     // Create a new task
     let task = Task::create(new_mm, &regs);
     let pid = task.lock().pid;
     log::debug!("Created a new task with PID = {}", pid);
+
+    // Link parent process and child process
     task.lock().parent = Arc::downgrade(&current);
+    cur_lock.wait_queue.add_child(Arc::clone(&task));
+
     // Duplicate PCB at the edge responder side
     hal::edge::with_edge_caller(|caller| {
         caller

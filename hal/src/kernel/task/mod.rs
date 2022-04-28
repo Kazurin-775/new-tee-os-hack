@@ -12,11 +12,13 @@ use spin::Mutex;
 
 mod mm;
 mod pid_pool;
+mod waitqueue;
 
 use crate::kernel::vm::AddressSpace;
 pub use crate::sys::task::*;
 pub use mm::{TaskMmStruct, VmArea};
 pub use pid_pool::PidPool;
+pub use waitqueue::WaitQueue;
 
 pub type Pid = i32;
 
@@ -27,6 +29,10 @@ pub struct Task {
     pub exited: bool,
     /// A weak reference to the parent process. Defaults to a dangling pointer.
     pub parent: Weak<Mutex<Task>>,
+    /// A simple wait queue, used by wait().
+    pub wait_queue: WaitQueue,
+    /// Whether the task is waiting for a child process.
+    pub waiting: bool,
 
     /// The kernel thread's TLS (thread local storage), used by the `current!`
     /// macro and `ret_from_fork`. Only a kernel task has a TLS (the scheduler
@@ -72,6 +78,8 @@ impl Task {
             pid,
             exited: false,
             parent: Weak::new(),
+            wait_queue: WaitQueue::new(),
+            waiting: false,
             tls,
             ktask_ctx,
             mm,
@@ -119,14 +127,17 @@ impl Future for TaskFuture {
         // The scheduler's `KtaskCtx` (write only).
         let mut prev_ktask_ctx = MaybeUninit::uninit();
 
-        // Borrow the Task's `KtaskCtx` to ensure exclusive access.
-        let mut next_ktask_ctx = self
-            .task
-            .try_lock()
-            .unwrap()
-            .ktask_ctx
-            .take()
-            .expect("ktask context is vacant");
+        let mut next_ktask_ctx;
+        {
+            let mut task_guard = self.task.try_lock().unwrap();
+            // Set the wait queue's waker.
+            task_guard.wait_queue.set_waker(cx.waker().clone());
+            // Borrow the Task's `KtaskCtx` to ensure exclusive access.
+            next_ktask_ctx = task_guard
+                .ktask_ctx
+                .take()
+                .expect("ktask context is vacant");
+        }
 
         // Enter the Task!
         unsafe {
@@ -145,6 +156,9 @@ impl Future for TaskFuture {
         if task_guard.exited {
             // Terminate the current async task.
             Poll::Ready(())
+        } else if task_guard.waiting {
+            // The task is waiting for a child process.
+            Poll::Pending
         } else {
             // The task is still in ready state, push it back to the
             // scheduler's queue.

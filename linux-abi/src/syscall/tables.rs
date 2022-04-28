@@ -28,6 +28,7 @@ pub static TABLE_GENERIC: Map<u32, SyscallHandler> = phf_map! {
     220u32 => SYSCALL_CLONE,
     221u32 => SYSCALL_EXECVE_PRE,
     222u32 => SYSCALL_MMAP,
+    260u32 => SYSCALL_WAIT4,
 };
 
 // https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
@@ -44,6 +45,7 @@ pub static TABLE_X86_64: Map<u32, SyscallHandler> = phf_map! {
     56u32 => SYSCALL_CLONE,
     59u32 => SYSCALL_EXECVE_PRE,
     60u32 => SYSCALL_EXIT,
+    61u32 => SYSCALL_WAIT4,
     79u32 => SYSCALL_GETCWD,
     80u32 => SYSCALL_CHDIR,
     110u32 => SYSCALL_GETPPID,
