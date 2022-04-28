@@ -20,6 +20,9 @@ pub unsafe extern "C" fn handle_syscall(
     // dispatch syscall by number
     let nr = nr as u32;
     match SYSCALL_TABLE.get(&nr).map(|&f| f) {
+        Some(SyscallHandler::Syscall0(f)) => {
+            result = f();
+        }
         Some(SyscallHandler::Syscall1(f)) => {
             result = f(arg0);
         }

@@ -18,6 +18,9 @@ pub unsafe fn handle_syscall(frame: *mut TrapFrame) {
 
     // dispatch syscall by number
     match SYSCALL_TABLE.get(&nr).map(|&f| f) {
+        Some(SyscallHandler::Syscall0(f)) => {
+            result = f();
+        }
         Some(SyscallHandler::Syscall1(f)) => {
             result = f(arg0);
         }

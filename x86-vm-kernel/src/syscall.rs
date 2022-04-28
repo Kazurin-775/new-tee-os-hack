@@ -27,6 +27,9 @@ unsafe extern "C" fn handle_syscall(frame: *mut SyscallFrame) {
     // dispatch syscall by number
     let nr = nr as u32;
     match SYSCALL_TABLE.get(&nr).map(|&f| f) {
+        Some(SyscallHandler::Syscall0(f)) => {
+            result = f();
+        }
         Some(SyscallHandler::Syscall1(f)) => {
             result = f(arg0);
         }
@@ -63,8 +66,6 @@ unsafe extern "C" fn handle_syscall(frame: *mut SyscallFrame) {
     }
 
     (*frame).rax = result as usize;
-
-    hal::task::yield_to_sched();
 
     gdt::enter_user();
 }

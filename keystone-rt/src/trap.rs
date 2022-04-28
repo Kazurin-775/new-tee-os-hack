@@ -18,7 +18,6 @@ unsafe extern "C" fn trap_handler(frame: *mut TrapFrame) {
         }
         _ => unknown_trap(),
     }
-    hal::task::yield_to_sched();
 }
 
 fn unknown_trap() -> ! {

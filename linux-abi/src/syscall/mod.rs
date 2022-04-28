@@ -10,6 +10,7 @@ pub mod tables;
 
 #[derive(Clone, Copy)]
 pub enum SyscallHandler {
+    Syscall0(unsafe fn() -> isize),
     Syscall1(unsafe fn(usize) -> isize),
     Syscall2(unsafe fn(usize, usize) -> isize),
     Syscall3(unsafe fn(usize, usize, usize) -> isize),

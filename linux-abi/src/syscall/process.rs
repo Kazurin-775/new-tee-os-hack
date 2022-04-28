@@ -5,6 +5,9 @@ use hal::task::UserspaceRegs;
 use super::SyscallHandler;
 
 pub const SYSCALL_EXIT: SyscallHandler = SyscallHandler::Syscall1(syscall_exit);
+pub const SYSCALL_GETPID: SyscallHandler = SyscallHandler::Syscall0(syscall_getpid);
+pub const SYSCALL_GETPPID: SyscallHandler = SyscallHandler::Syscall0(syscall_getppid);
+pub const SYSCALL_SCHED_YIELD: SyscallHandler = SyscallHandler::Syscall0(syscall_sched_yield);
 pub const SYSCALL_CLONE: SyscallHandler = SyscallHandler::SyscallClone(syscall_clone);
 pub const SYSCALL_EXECVE_PRE: SyscallHandler = SyscallHandler::SyscallExecvePre(syscall_execve_pre);
 
@@ -30,9 +33,33 @@ unsafe fn syscall_exit(retval: usize) -> isize {
     unreachable!("trying to re-schedule an already terminated task")
 }
 
+unsafe fn syscall_getpid() -> isize {
+    hal::task::current().lock().pid as isize
+}
+
+unsafe fn syscall_getppid() -> isize {
+    let current = hal::task::current();
+    let current_guard = current.lock();
+    if let Some(parent) = current_guard.parent.upgrade() {
+        parent.lock().pid as isize
+    } else if current_guard.pid == 1 {
+        // init has PPID = 0
+        0
+    } else {
+        log::debug!("getpid: The parent of {} has exited", current_guard.pid);
+        1
+    }
+}
+
+unsafe fn syscall_sched_yield() -> isize {
+    hal::task::yield_to_sched();
+    0
+}
+
 #[cfg(feature = "multitasking")]
 unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isize {
     use crate::Errno;
+    use alloc::sync::Arc;
     use hal::task::{Task, TaskFuture};
 
     const SIGCHLD: usize = 17;
@@ -46,9 +73,9 @@ unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isi
         return Errno::EINVAL.as_neg_isize();
     }
 
+    let current = hal::task::current();
     let (cur_pid, new_mm);
     {
-        let current = hal::task::current();
         let cur_lock = current.lock();
         // Get current PID
         cur_pid = cur_lock.pid;
@@ -59,6 +86,7 @@ unsafe fn syscall_clone(regs: &UserspaceRegs, flags: usize, stack: usize) -> isi
     let task = Task::create(new_mm, &regs);
     let pid = task.lock().pid;
     log::debug!("Created a new task with PID = {}", pid);
+    task.lock().parent = Arc::downgrade(&current);
     // Duplicate PCB at the edge responder side
     hal::edge::with_edge_caller(|caller| {
         caller

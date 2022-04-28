@@ -25,6 +25,8 @@ pub static PID_POOL: Mutex<PidPool> = Mutex::new(PidPool::new());
 pub struct Task {
     pub pid: Pid,
     pub exited: bool,
+    /// A weak reference to the parent process. Defaults to a dangling pointer.
+    pub parent: Weak<Mutex<Task>>,
 
     /// The kernel thread's TLS (thread local storage), used by the `current!`
     /// macro and `ret_from_fork`. Only a kernel task has a TLS (the scheduler
@@ -69,6 +71,7 @@ impl Task {
         let task = Task {
             pid,
             exited: false,
+            parent: Weak::new(),
             tls,
             ktask_ctx,
             mm,
