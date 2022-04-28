@@ -30,7 +30,7 @@ impl HeapPageManager {
 impl PageManager for HeapPageManager {
     fn alloc_physical_page(&mut self) -> PhysAddr {
         let addr = VirtAddr::from_ptr(crate::vm::alloc_page());
-        log::debug!("Allocated {:#X} for page table", addr.0);
+        log::trace!("Allocated {:#X} for page table", addr.0);
         self.virt2phys(addr)
     }
 
@@ -59,7 +59,7 @@ impl AddressSpace for UserAddressSpace {
         let cur_ppn = riscv::register::satp::read().ppn();
         let my_ppn = self.virt2phys(self.inner.as_ptr().cast()) >> 12;
         if cur_ppn != my_ppn {
-            log::debug!(
+            log::trace!(
                 "Switching address space from {:#X} -> {:#X}",
                 cur_ppn,
                 my_ppn,
@@ -122,7 +122,7 @@ impl ClonableAddressSpace for UserAddressSpace {
         assert!((range.start & 0xFFF) == 0 && (range.end & 0xFFF) == 0);
         for addr in range.step_by(0x1000) {
             let page = crate::vm::alloc_page();
-            log::debug!("Copying page at {:#X} to VirtAddr({:?})", addr, page);
+            log::trace!("Copying page at {:#X} to VirtAddr({:?})", addr, page);
             unsafe {
                 crate::mem::copy_from_user(
                     core::slice::from_raw_parts_mut(page, 0x1000),
@@ -130,7 +130,7 @@ impl ClonableAddressSpace for UserAddressSpace {
                 );
             }
             let phys = self.mem_mgr.virt2phys(VirtAddr::from_ptr(page));
-            // log::debug!("Mapping VirtAdr({:#X}) to {:?}", addr, phys);
+            // log::trace!("Mapping VirtAdr({:#X}) to {:?}", addr, phys);
             self.map_single(VirtAddr(addr), phys);
         }
     }

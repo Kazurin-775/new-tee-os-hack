@@ -40,7 +40,7 @@ impl AddressSpace for UserAddressSpace {
         let (cur_rpt_phys, flags) = x86_64::registers::control::Cr3::read();
         let my_rpt_phys = self.virt2phys(self.rpt_ptr.cast());
         if cur_rpt_phys.start_address().as_u64() as usize != my_rpt_phys {
-            log::debug!(
+            log::trace!(
                 "Switching address space from {:?} -> {:#X}",
                 cur_rpt_phys.start_address(),
                 my_rpt_phys,
@@ -123,7 +123,7 @@ impl ClonableAddressSpace for UserAddressSpace {
         assert!((range.start & 0xFFF) == 0 && (range.end & 0xFFF) == 0);
         for addr in range.step_by(0x1000) {
             let page = crate::vm::alloc_page();
-            log::debug!("Copying page at {:#X} to VirtAddr({:?})", addr, page);
+            log::trace!("Copying page at {:#X} to VirtAddr({:?})", addr, page);
             unsafe {
                 crate::mem::copy_from_user(
                     core::slice::from_raw_parts_mut(page, 0x1000),
@@ -131,7 +131,7 @@ impl ClonableAddressSpace for UserAddressSpace {
                 );
             }
             let phys = self.virt2phys(page.cast());
-            // log::debug!("Mapping VirtAddr({:#X}) to {:?}", addr, phys);
+            // log::trace!("Mapping VirtAddr({:#X}) to {:?}", addr, phys);
             self.map_single(VirtAddr::new(addr as u64), PhysAddr::new(phys as u64));
         }
     }
