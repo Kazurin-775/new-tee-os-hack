@@ -47,6 +47,9 @@ where
 
 pub struct ElfFile {
     elf: Elf<'static>,
+    /// ELF files with PIE are based at address 0. To prevent null pointer
+    /// dereference, we must offset all segments to a non-zero base address.
+    pie_load_offset: usize,
 }
 
 pub trait ElfReader {
@@ -62,6 +65,14 @@ impl ElfFile {
         let header = Elf::parse_header(&header).expect("failed to parse ELF header");
         let mut elf = Elf::lazy_parse(header).expect("failed to parse ELF file");
         check_elf64::<A>(&elf.header);
+
+        // set load offset based on PIE info
+        let pie_load_offset = if elf.header.e_type == header::ET_DYN {
+            // TODO: make this value configurable
+            0x1000
+        } else {
+            0
+        };
 
         // create context
         let container = if header.e_ident[header::EI_CLASS] == header::ELFCLASS64 {
@@ -81,7 +92,10 @@ impl ElfFile {
             ProgramHeader::parse(&program_headers, 0, header.e_phnum as usize, ctx)
                 .expect("failed to parse program headers");
 
-        ElfFile { elf }
+        ElfFile {
+            elf,
+            pie_load_offset,
+        }
     }
 
     pub fn load_mapped<R: ElfReader>(&self, file: &mut R, mut mapper: impl MapperFn) {
@@ -107,11 +121,8 @@ impl ElfFile {
                 file.read(&mut mem[virt_off_begin..virt_off_end]);
 
                 // map the memory block to the virtual address specified in the ELF file
-                mapper.map(
-                    mem.as_ptr() as *const _,
-                    mem.len(),
-                    (seg.p_vaddr as usize) / PAGE_SIZE * PAGE_SIZE,
-                );
+                let load_addr_offseted = load_addr + self.pie_load_offset;
+                mapper.map(mem.as_ptr() as *const _, mem.len(), load_addr_offseted);
             }
         }
     }
@@ -131,8 +142,9 @@ impl ElfFile {
                 // let file_end = file_begin + (seg.p_filesz as usize);
 
                 // allocate memory at the location specified in the ELF file
+                let load_addr_offseted = load_addr + self.pie_load_offset;
                 let mem = unsafe {
-                    let mem_ptr = load_addr as *mut u8;
+                    let mem_ptr = load_addr_offseted as *mut u8;
                     let size = get_pages(seg.p_memsz) * PAGE_SIZE;
                     // alloc() may place the memory at a different location
                     let mem_ptr = alloc(mem_ptr, size);
@@ -149,6 +161,6 @@ impl ElfFile {
 
     #[inline]
     pub fn entry(&self) -> u64 {
-        self.elf.header.e_entry
+        self.elf.header.e_entry + self.pie_load_offset as u64
     }
 }
