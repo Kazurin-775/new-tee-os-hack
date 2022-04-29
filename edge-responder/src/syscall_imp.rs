@@ -206,8 +206,11 @@ pub fn special_getdents64(
 }
 
 pub fn special_fstat(stream: &mut dyn EdgeStream, pid: i32, fd: i32) -> anyhow::Result<()> {
-    // TODO: support archs with different struct sizes
-    assert_eq!(std::mem::size_of::<nix::libc::stat>(), 128);
+    #[cfg(target_arch = "riscv64")]
+    const STAT_SIZE: usize = 128;
+    #[cfg(target_arch = "x86_64")]
+    const STAT_SIZE: usize = 144;
+    assert_eq!(std::mem::size_of::<nix::libc::stat>(), STAT_SIZE);
 
     let local_dir = Arc::clone(
         TASKS
@@ -220,7 +223,7 @@ pub fn special_fstat(stream: &mut dyn EdgeStream, pid: i32, fd: i32) -> anyhow::
     );
     let guard = local_dir.lock().unwrap();
 
-    let mut buf = [0; 128];
+    let mut buf = [0; STAT_SIZE];
     let result = unsafe { nix::libc::fstat(guard.as_raw_fd(), buf.as_mut_ptr().cast()) };
 
     stream

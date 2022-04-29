@@ -182,6 +182,11 @@ unsafe fn syscall_dup3(src_fd: usize, dest_fd: usize, flags: usize) -> isize {
 }
 
 unsafe fn syscall_fstat(fd: usize, stat: usize) -> isize {
+    #[cfg(target_arch = "riscv64")]
+    const STAT_SIZE: usize = 128;
+    #[cfg(target_arch = "x86_64")]
+    const STAT_SIZE: usize = 144;
+
     let result = hal::edge::with_edge_caller(|caller| {
         caller
             .write_header(&EdgeCallReq::SyscallFstat {
@@ -193,7 +198,7 @@ unsafe fn syscall_fstat(fd: usize, stat: usize) -> isize {
 
         let result = caller.read_header().unwrap().into_syscall_resp().unwrap() as isize;
         if result >= 0 {
-            hal::mem::copy_to_user(&caller.read_data().unwrap()[0..128], stat as *mut u8);
+            hal::mem::copy_to_user(&caller.read_data().unwrap()[0..STAT_SIZE], stat as *mut u8);
         }
         result
     });
