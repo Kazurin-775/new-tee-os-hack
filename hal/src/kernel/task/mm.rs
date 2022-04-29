@@ -1,9 +1,9 @@
 use alloc::collections::BTreeMap;
 use core::ops::Range;
 
-use crate::{kernel::vm::AddressSpace, sys::vm::UserAddressSpace};
 #[cfg(feature = "multitasking")]
 use crate::vm::ClonableAddressSpace;
+use crate::vm::{AddressSpace, UserAddressSpace};
 
 // TODO: decide whether addr_space should be Clone & Debug
 #[derive(Debug)]
@@ -95,5 +95,20 @@ impl TaskMmStruct {
             vmas: self.vmas.clone(),
             stack_zone: self.stack_zone.clone(),
         }
+    }
+
+    /// Remove and free all VMAs owned by this struct.
+    ///
+    /// Warning: this must be called when this struct is active!
+    pub fn destroy(&mut self) {
+        // Doesn't BTreeMap have drain()?
+        for (_start, vma) in &self.vmas {
+            log::debug!("Deallocating VMA: {:?}", vma);
+            self.addr_space.unmap_dealloc(vma.range.clone());
+        }
+        self.vmas.clear();
+        log::debug!("Deallocating stack: {:?}", self.stack_zone);
+        self.addr_space.unmap_dealloc(self.stack_zone.clone());
+        self.stack_zone = 0..0;
     }
 }

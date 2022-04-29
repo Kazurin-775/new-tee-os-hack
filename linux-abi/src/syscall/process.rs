@@ -26,6 +26,8 @@ unsafe fn syscall_exit(retval: usize) -> isize {
     });
 
     cur_lock.exit_status = Some(retval as i32);
+    // Free userspace memory
+    cur_lock.mm.destroy();
 
     // Signal the parent process if it is waiting for us.
     if let Some(parent) = cur_lock.parent.upgrade() {
