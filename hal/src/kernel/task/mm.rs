@@ -107,8 +107,17 @@ impl TaskMmStruct {
             self.addr_space.unmap_dealloc(vma.range.clone());
         }
         self.vmas.clear();
-        log::debug!("Deallocating stack: {:?}", self.stack_zone);
-        self.addr_space.unmap_dealloc(self.stack_zone.clone());
-        self.stack_zone = 0..0;
+
+        // The SGX part does not allocate the stack from reserved memory, so
+        // we cannot actually deallocate the user stack here.
+        // Since the SGX part is not going to support multitasking, we can just
+        // leave this part unimplemented.
+        // This is a hack.
+        #[cfg(not(feature = "sgx"))]
+        {
+            log::debug!("Deallocating stack: {:?}", self.stack_zone);
+            self.addr_space.unmap_dealloc(self.stack_zone.clone());
+            self.stack_zone = 0..0;
+        }
     }
 }
