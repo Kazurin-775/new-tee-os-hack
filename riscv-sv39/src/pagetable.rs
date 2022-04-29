@@ -26,6 +26,11 @@ pub const MODE_SV39: u64 = 8;
 
 impl PageTableEntry {
     #[inline]
+    pub fn invalid() -> PageTableEntry {
+        PageTableEntry(0)
+    }
+
+    #[inline]
     pub fn for_ppn(ppn: usize) -> PageTableEntry {
         PageTableEntry(((ppn as u64) << 10) | PTE_VALID)
     }
@@ -164,6 +169,11 @@ impl<M: PageManager> RootPageTable<M> {
         assert!(src.page_offset() == 0);
         let pt1 = self.lookup_2m(src);
         pt1.entry(src.vpn0()).write(pte);
+    }
+
+    pub unsafe fn access_4k(&mut self, addr: VirtAddr) -> *mut PageTableEntry {
+        let pt1 = self.lookup_2m(addr);
+        pt1.entry(addr.vpn0())
     }
 
     pub fn inner(&self) -> PageTable {

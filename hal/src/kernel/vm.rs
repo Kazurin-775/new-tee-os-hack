@@ -6,6 +6,7 @@ pub trait AddressSpace {
     fn current() -> Self;
     fn set_current(&self);
     fn alloc_map(&mut self, range: Range<usize>);
+    fn unmap_dealloc(&mut self, range: Range<usize>);
     fn virt2phys(&self, ptr: *const ()) -> usize;
     fn phys2virt(&self, addr: usize) -> *const ();
 }
@@ -23,4 +24,10 @@ static ALLOC_LAYOUT_PAGE: Layout =
 
 pub fn alloc_page() -> *mut u8 {
     unsafe { alloc::alloc::alloc(ALLOC_LAYOUT_PAGE) }
+}
+
+pub fn dealloc_page(ptr: *mut u8) {
+    unsafe {
+        alloc::alloc::dealloc(ptr, ALLOC_LAYOUT_PAGE);
+    }
 }

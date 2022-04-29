@@ -60,10 +60,20 @@ impl AddressSpace for UserAddressSpace {
 
         for addr in range.step_by(0x1000) {
             let page = VirtAddr::from_ptr(crate::vm::alloc_page());
+            log::trace!("Allocated {:#X} for user address {:#X}", page.as_u64(), addr);
             self.map_single(
                 VirtAddr::new(addr as u64),
                 PhysAddr::new(AddressSpace::virt2phys(self, page.as_ptr()) as u64),
             );
+        }
+    }
+
+    fn unmap_dealloc(&mut self, range: Range<usize>) {
+        assert_eq!(range.start & 0xFFF, 0);
+        assert_eq!(range.end & 0xFFF, 0);
+
+        for addr in range.step_by(0x1000) {
+            self.unmap_dealloc_single(VirtAddr::new(addr as u64));
         }
     }
 
@@ -96,6 +106,20 @@ impl UserAddressSpace {
                 .unwrap()
                 .flush();
         }
+    }
+
+    pub fn unmap_dealloc_single(&mut self, user_virt: VirtAddr) {
+        let (phys, flusher) = self
+            .rpt()
+            .unmap(Page::<Size4KiB>::from_start_address(user_virt).unwrap())
+            .expect("address not mapped?!");
+        flusher.flush();
+        let virt = self.phys2virt(phys.start_address().as_u64() as usize);
+        log::trace!("Deallocating and unmapping {:?}", virt);
+        // unsafe {
+        //     core::slice::from_raw_parts_mut(virt as *mut u8, kconfig::PAGE_SIZE).fill(0xCC);
+        // }
+        crate::vm::dealloc_page(virt as *mut u8);
     }
 }
 

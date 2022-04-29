@@ -1,3 +1,5 @@
+use core::ops::Range;
+
 use crate::vm::AddressSpace;
 
 #[derive(Debug)]
@@ -12,7 +14,7 @@ impl AddressSpace for UserAddressSpace {
         // no-op
     }
 
-    fn alloc_map(&mut self, range: core::ops::Range<usize>) {
+    fn alloc_map(&mut self, range: Range<usize>) {
         let result = unsafe {
             sgx_alloc::rsrvmem::alloc_with_addr(
                 range.start as *mut u8,
@@ -20,6 +22,16 @@ impl AddressSpace for UserAddressSpace {
             )
         };
         assert_eq!(result as usize, range.start);
+    }
+
+    fn unmap_dealloc(&mut self, range: Range<usize>) {
+        unsafe {
+            sgx_alloc::rsrvmem::dealloc(
+                range.start as *mut u8,
+                u32::try_from(range.len() / kconfig::PAGE_SIZE).unwrap(),
+            )
+            .expect("deallocation failed?!");
+        }
     }
 
     fn virt2phys(&self, ptr: *const ()) -> usize {

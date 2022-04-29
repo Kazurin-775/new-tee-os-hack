@@ -52,8 +52,8 @@ impl TaskMmStruct {
         if let Some(vma) = self.vmas.get(&addr) {
             if len == vma.range.len() {
                 log::debug!("Removing VMA: {:?}", vma);
+                self.addr_space.unmap_dealloc(vma.range.clone());
                 self.vmas.remove(&addr);
-                // TODO: deallocate memory
                 true
             } else {
                 log::error!("VMA {:?}'s length is not equal to {}", vma, len);

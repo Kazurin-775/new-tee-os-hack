@@ -78,7 +78,17 @@ impl AddressSpace for UserAddressSpace {
 
         for addr in range.step_by(0x1000) {
             let page = VirtAddr::from_ptr(crate::vm::alloc_page());
+            log::trace!("Allocated {:#X} for user address {:#X}", page.0, addr);
             self.map_single(VirtAddr(addr), self.mem_mgr.virt2phys(page));
+        }
+    }
+
+    fn unmap_dealloc(&mut self, range: Range<usize>) {
+        assert_eq!(range.start & 0xFFF, 0);
+        assert_eq!(range.end & 0xFFF, 0);
+
+        for addr in range.step_by(0x1000) {
+            self.unmap_dealloc_single(VirtAddr(addr));
         }
     }
 
@@ -97,6 +107,20 @@ impl UserAddressSpace {
             self.inner
                 .map_4k(virt, PageTableEntry::for_phys(phys).make_user().make_rwx());
         }
+    }
+
+    pub fn unmap_dealloc_single(&mut self, user_virt: VirtAddr) {
+        let pte = unsafe { self.inner.access_4k(user_virt) };
+        let phys = unsafe { (*pte).ppn() } << 12;
+        let virt = self.mem_mgr.phys2virt(PhysAddr(phys));
+        log::trace!("Deallocating and unmapping {:#X}", virt.0);
+        unsafe {
+            pte.write(PageTableEntry::invalid());
+            // TODO: change ASID
+            riscv::asm::sfence_vma(0, user_virt.0);
+            // core::slice::from_raw_parts_mut(virt.as_mut_ptr() as *mut u8, PAGE_SIZE).fill(0xCC);
+        }
+        crate::vm::dealloc_page(virt.as_mut_ptr());
     }
 }
 
