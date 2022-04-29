@@ -23,7 +23,10 @@ fn check_elf64<A: ElfArch>(head: &Header) {
     if &head.e_ident[0..4] != b"\x7FELF" {
         panic!("invalid ELF magic number: {:?}", &head.e_ident[0..4]);
     }
-    if head.e_machine != A::E_MACHINE || head.e_type != header::ET_EXEC {
+    // TODO: handle position independent executables
+    if head.e_machine != A::E_MACHINE
+        || (head.e_type != header::ET_EXEC && head.e_type != header::ET_DYN)
+    {
         panic!("unsupported architecture or ELF file type")
     }
     // check pass
