@@ -158,9 +158,13 @@ fn write_syscall_result(
 ) -> anyhow::Result<()> {
     let result_as_isize = match result {
         Ok(r) => r,
-        Err(SyscallError::Linux(errno, None)) => -(errno as isize),
+        Err(SyscallError::Linux(errno, None)) => {
+            // TODO: display the syscall type and arguments
+            log::warn!("Error handling syscall: {}", errno);
+            -(errno as isize)
+        }
         Err(SyscallError::Linux(errno, Some(err))) => {
-            log::warn!("Error handling syscall: {:#}", err);
+            log::warn!("Error handling syscall: {}, caused by: {:#}", errno, err);
             -(errno as isize)
         }
         Err(SyscallError::Internal(err)) => {
