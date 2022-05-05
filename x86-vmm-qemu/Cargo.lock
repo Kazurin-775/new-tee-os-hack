@@ -1027,5 +1027,6 @@ dependencies = [
  "futures-lite",
  "locate-cargo-manifest",
  "log",
+ "nix",
  "postcard",
 ]

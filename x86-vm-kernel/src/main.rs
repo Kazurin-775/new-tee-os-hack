@@ -27,13 +27,25 @@ fn clear_screen(boot_info: &mut BootInfo) {
 }
 
 fn start_kernel(boot_info: &'static mut BootInfo) -> ! {
-    klog::klog_init().unwrap();
     // assert that a mirror mapping is created at `KERNEL_MIRROR_BASE`
     assert_eq!(
         Option::from(boot_info.physical_memory_offset),
         Some(hal::cfg::KERNEL_MIRROR_BASE as u64)
     );
-    heap::init(boot_info);
+    // Allocate edge memory from a usable memory region
+    let mem_region = heap::find_usable_region(boot_info);
+    unsafe {
+        hal::arch::x86_vm::initialize_edge_caller(
+            (mem_region.start as usize + hal::cfg::KERNEL_MIRROR_BASE) as *mut u8,
+        );
+    }
+
+    klog::klog_init().unwrap();
+    heap::init(
+        mem_region.start as usize + hal::cfg::UTM_SIZE,
+        mem_region.end as usize,
+    );
+    log::debug!("Edge memory and heap initialized at {:?}", mem_region);
 
     hal::arch::x86_vm::arch_init();
     syscall::init();

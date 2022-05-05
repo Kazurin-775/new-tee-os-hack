@@ -1,7 +1,7 @@
 [package]
 name = "x86-vmm-qemu"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 anyhow = "1.0.56"
@@ -14,4 +14,5 @@ env_logger = "0.9.0"
 futures-lite = "1.12.0"
 locate-cargo-manifest = "0.2.2"
 log = "0.4.16"
+nix = "0.23.1"
 postcard = { version = "0.7.3", features = ["alloc"] }

@@ -87,6 +87,12 @@ fn main() -> anyhow::Result<()> {
         // security options
         "-cpu",
         "kvm64,smap,smep",
+        // export guest memory to us
+        // https://blog.reds.ch/?p=1379
+        "-object",
+        "memory-backend-file,id=mem,mem-path=/dev/shm/tee-ram,size=128M,share=on",
+        "-machine",
+        "q35,memory-backend=mem",
     ]);
 
     let mut run_process = run_cmd.spawn().context("spawn qemu process")?;

@@ -15,4 +15,5 @@ pub const USER_STACK_SIZE: usize = 0x1_000;
 
 pub const KERNEL_STACK_SIZE: usize = 0x4_000;
 
+pub const UTM_SIZE: usize = 0x4_000;
 pub const EDGE_BUFFER_SIZE: usize = 0x3_000;
