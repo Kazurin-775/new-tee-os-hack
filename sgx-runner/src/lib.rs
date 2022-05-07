@@ -47,7 +47,7 @@ fn init_enclave() -> SgxResult<SgxEnclave> {
 
 pub fn main() -> anyhow::Result<()> {
     env_logger::builder()
-        .filter_level(log::LevelFilter::Trace)
+        .filter_level(log::LevelFilter::Debug)
         .init();
 
     let enclave = init_enclave()
