@@ -56,7 +56,7 @@ unsafe fn syscall_getcwd(buf: usize, size: usize) -> isize {
     hal::mem::copy_to_user(cwd.as_bytes(), buf as *mut u8);
     hal::mem::copy_to_user(&[0], (buf + cwd.len()) as *mut u8);
 
-    0
+    buf.try_into().unwrap()
 }
 
 unsafe fn syscall_chdir(path: usize) -> isize {
