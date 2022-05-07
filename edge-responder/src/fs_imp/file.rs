@@ -37,9 +37,26 @@ impl TaskFsContext {
             .unwrap()
     }
 
-    pub fn open(&mut self, path: &str, flags: i32, mode: u32) -> LinuxResult<i32> {
+    pub fn open(
+        &mut self,
+        dir_fd: Option<i32>,
+        path: &str,
+        flags: i32,
+        mode: u32,
+    ) -> LinuxResult<i32> {
         let path = self.resolve_path(&path);
-        let fd = nix::fcntl::open(
+        let dir_fd = dir_fd
+            .map(|fd| {
+                self.fd_mappings
+                    .get(&fd)
+                    .expect("no such fd")
+                    .lock()
+                    .unwrap()
+                    .as_raw_fd()
+            })
+            .unwrap_or(nix::libc::AT_FDCWD);
+        let fd = nix::fcntl::openat(
+            dir_fd,
             &path,
             OFlag::from_bits_truncate(flags),
             Mode::from_bits_truncate(mode),

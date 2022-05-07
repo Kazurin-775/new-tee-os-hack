@@ -16,9 +16,12 @@ pub fn openat(
     flags: i32,
     mode: u32,
 ) -> SyscallResult<isize> {
-    if dir_fd != nix::libc::AT_FDCWD {
-        return Err(anyhow::anyhow!("only FD_ATCWD is supported").into());
-    }
+    let dir_fd = if dir_fd == nix::libc::AT_FDCWD {
+        None
+    } else {
+        log::trace!("Opening at dirfd {}", dir_fd);
+        Some(dir_fd)
+    };
 
     TASKS
         .lock()
@@ -26,7 +29,7 @@ pub fn openat(
         .get_mut(&pid)
         .ok_or(anyhow::anyhow!("no such process"))?
         .fs
-        .open(&path, flags, mode)
+        .open(dir_fd, &path, flags, mode)
         .map(|fd| fd as isize)
         .map_err(Into::into)
 }
