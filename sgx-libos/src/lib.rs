@@ -89,12 +89,23 @@ pub extern "C" fn rt_main(utm_base: *mut u8, utm_size: usize) -> sgx_status_t {
         placement as *mut u8
     });
 
+    // Copy argv and envp to the user stack's end
+    let (user_stack_data, user_sp) = linux_abi::exec::prepare_user_stack_data(
+        mm.stack_zone.end,
+        linux_abi::exec::INIT_ARGV,
+        linux_abi::exec::INIT_ENVP,
+    );
+    assert!(user_stack_data.len() < mm.stack_zone.len());
+    unsafe {
+        hal::mem::copy_to_user(&user_stack_data, user_sp as *mut u8);
+    }
+
     // Switch to user context and call ELF's main()
     let elf_main = elf_file.entry() as usize + rsrv_base as usize;
     let task = Task::create(
         mm,
         &UserspaceRegs {
-            rsp: user_stack_begin + 0x4000,
+            rsp: user_sp,
             rip: elf_main,
         },
     );
