@@ -92,7 +92,9 @@ fn main() -> anyhow::Result<()> {
         "-object",
         "memory-backend-file,id=mem,mem-path=/dev/shm/tee-ram,size=128M,share=on",
         "-machine",
-        "q35,memory-backend=mem",
+        "pc,memory-backend=mem",
+        "-net",
+        "none",
     ]);
 
     let mut run_process = run_cmd.spawn().context("spawn qemu process")?;

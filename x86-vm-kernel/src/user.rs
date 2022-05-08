@@ -9,7 +9,8 @@ pub fn enter_user_mode() {
     log::debug!("Run x86-vm-init as init process");
 
     // get root page table
-    let addr_space = UserAddressSpace::current();
+    let mut addr_space = UserAddressSpace::current();
+    addr_space.cleanup_bootloader();
     // exec x86-vm-init
     let exec_data = linux_abi::elf::exec_within(
         addr_space,

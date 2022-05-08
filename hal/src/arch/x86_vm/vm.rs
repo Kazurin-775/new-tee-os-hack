@@ -92,6 +92,25 @@ impl UserAddressSpace {
         unsafe { OffsetPageTable::new(&mut *self.rpt_ptr, MIRROR_BASE_VIRT) }
     }
 
+    pub fn cleanup_bootloader(&mut self) {
+        // The `bootloader` crate maps RDSP unconditionally, which interferes
+        // with our user address space. Here we manually clean up these regions
+        // as a workaround.
+        let mut rpt = self.rpt();
+        for page in (0x11000..0x13000).step_by(0x1000) {
+            let page = Page::<Size4KiB>::from_start_address(VirtAddr::new(page)).unwrap();
+            match rpt.unmap(page) {
+                Ok(orig) => {
+                    log::trace!("Unmapped bootloader region {:?} ({:?})", page, orig.0);
+                    orig.1.flush();
+                }
+                Err(err) => {
+                    log::warn!("Failed to unmap bootloader region {:?}: {:?}", page, err);
+                }
+            }
+        }
+    }
+
     pub fn map_single(&mut self, virt: VirtAddr, phys: PhysAddr) {
         unsafe {
             self.rpt()
