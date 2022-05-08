@@ -12,6 +12,7 @@ edge-proto = { path = "../edge-proto" }
 edge-responder = { path = "../edge-responder" }
 env_logger = "0.9.0"
 futures-lite = "1.12.0"
+kconfig = { path = "../kconfig", features = ["x86-vm"] }
 locate-cargo-manifest = "0.2.2"
 log = "0.4.16"
 nix = "0.23.1"

@@ -56,8 +56,12 @@ pub fn main() -> anyhow::Result<()> {
 
     let edge_mem = unsafe { libc::malloc(kconfig::EDGE_MEM_SIZE) } as *mut u8;
     log::debug!("Shared memory allocated, address = {:?}", edge_mem);
-    *EDGE_MEM.lock().unwrap() =
-        SharedMemEdgeStream::new(edge_mem, 0x1_000, unsafe { edge_mem.add(0x1_000) }, 0x3_000);
+    *EDGE_MEM.lock().unwrap() = SharedMemEdgeStream::new(
+        edge_mem,
+        0x1_000,
+        unsafe { edge_mem.add(0x1_000) },
+        kconfig::EDGE_BUFFER_SIZE,
+    );
 
     // let mut kernel_file = File::open("sgx-rt.bin").expect("failed to open the bin");
     // let edge_mem_ref:&mut [u8]=core::slice::from_raw_parts_mut(edge_mem as *mut u8,SHARED_MEM_SIZE);

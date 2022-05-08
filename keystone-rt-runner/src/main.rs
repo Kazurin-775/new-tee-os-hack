@@ -168,8 +168,12 @@ fn main() {
 
     let edge_mem =
         unsafe { enclave.map_mem(0, UTM_SIZE) }.expect("failed to map untrusted memory") as *mut u8;
-    let mut edge_stream =
-        SharedMemEdgeStream::new(edge_mem, 0x1_000, unsafe { edge_mem.add(0x1_000) }, 0x3_000);
+    let mut edge_stream = SharedMemEdgeStream::new(
+        edge_mem,
+        0x1_000,
+        unsafe { edge_mem.add(0x1_000) },
+        EDGE_BUFFER_SIZE,
+    );
 
     let mut status = enclave.run().expect("failed to run enclave");
     loop {

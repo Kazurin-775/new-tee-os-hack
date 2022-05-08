@@ -15,7 +15,7 @@ pub unsafe fn initialize_edge_caller(utm_base: *mut u8) {
         utm_base,
         0x1_000,
         utm_base.add(0x1_000),
-        0x3_000,
+        kconfig::EDGE_BUFFER_SIZE,
         edge_call_kick,
     );
 }

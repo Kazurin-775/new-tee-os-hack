@@ -516,6 +516,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 
 [[package]]
+name = "kconfig"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "kv-log-macro"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1025,6 +1032,7 @@ dependencies = [
  "edge-responder",
  "env_logger",
  "futures-lite",
+ "kconfig",
  "locate-cargo-manifest",
  "log",
  "nix",

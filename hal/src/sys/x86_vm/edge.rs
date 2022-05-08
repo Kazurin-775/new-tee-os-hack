@@ -30,7 +30,7 @@ pub unsafe fn initialize_edge_caller(edge_mem: *mut u8) {
         edge_mem,
         0x1_000,
         edge_mem.add(0x1_000),
-        0x3_000,
+        kconfig::EDGE_BUFFER_SIZE,
         edge_call_kick,
     );
 

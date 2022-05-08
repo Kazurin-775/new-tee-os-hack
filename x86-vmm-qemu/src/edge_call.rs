@@ -44,7 +44,7 @@ impl EdgeCallClient {
         let edge_mem = unsafe {
             nix::sys::mman::mmap(
                 std::ptr::null_mut(),
-                0x4_000,
+                kconfig::UTM_SIZE,
                 ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
                 MapFlags::MAP_SHARED,
                 ram_fd,
@@ -55,8 +55,12 @@ impl EdgeCallClient {
 
         nix::unistd::close(ram_fd).context("close shm_fd")?;
 
-        let edge_stream =
-            SharedMemEdgeStream::new(edge_mem, 0x1_000, unsafe { edge_mem.add(0x1_000) }, 0x3_000);
+        let edge_stream = SharedMemEdgeStream::new(
+            edge_mem,
+            0x1_000,
+            unsafe { edge_mem.add(0x1_000) },
+            kconfig::EDGE_BUFFER_SIZE,
+        );
         Ok(EdgeCallClient {
             socket,
             edge_mem,
