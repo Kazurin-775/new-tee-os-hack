@@ -97,7 +97,7 @@ unsafe fn syscall_read(fd: usize, ptr: usize, mut len: usize) -> isize {
         len -= bytes_read;
     }
 
-    let bytes_read = syscall_try!(edge_read(fd, &mut buf)) as usize;
+    let bytes_read = syscall_try!(edge_read(fd, &mut buf[0..len])) as usize;
     total_bytes_read += bytes_read;
     hal::mem::copy_to_user(&buf[0..bytes_read], ptr as *mut u8);
 
