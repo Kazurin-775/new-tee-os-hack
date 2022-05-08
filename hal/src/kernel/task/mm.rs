@@ -38,7 +38,7 @@ impl TaskMmStruct {
             range: addr..addr + size,
         };
         log::debug!("Adding VMA: {:?}", vma);
-        self.addr_space.alloc_map(vma.range.clone());
+        self.addr_space.alloc_map_zeroed(vma.range.clone());
         self.vmas.insert(addr, vma);
 
         addr

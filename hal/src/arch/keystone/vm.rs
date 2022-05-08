@@ -83,6 +83,17 @@ impl AddressSpace for UserAddressSpace {
         }
     }
 
+    fn alloc_map_zeroed(&mut self, range: Range<usize>) {
+        assert_eq!(range.start & 0xFFF, 0);
+        assert_eq!(range.end & 0xFFF, 0);
+
+        for addr in range.step_by(0x1000) {
+            let page = VirtAddr::from_ptr(crate::vm::alloc_page_zeroed());
+            log::trace!("Allocated {:#X} for user address {:#X}", page.0, addr);
+            self.map_single(VirtAddr(addr), self.mem_mgr.virt2phys(page));
+        }
+    }
+
     fn unmap_dealloc(&mut self, range: Range<usize>) {
         assert_eq!(range.start & 0xFFF, 0);
         assert_eq!(range.end & 0xFFF, 0);

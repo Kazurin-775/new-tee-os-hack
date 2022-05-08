@@ -24,6 +24,13 @@ impl AddressSpace for UserAddressSpace {
         assert_eq!(result as usize, range.start);
     }
 
+    fn alloc_map_zeroed(&mut self, range: Range<usize>) {
+        self.alloc_map(range.clone());
+        unsafe {
+            core::ptr::write_bytes(range.start as *mut u8, 0, range.len());
+        }
+    }
+
     fn unmap_dealloc(&mut self, range: Range<usize>) {
         unsafe {
             sgx_alloc::rsrvmem::dealloc(
